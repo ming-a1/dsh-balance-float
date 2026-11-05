@@ -588,9 +588,19 @@ window.__ModuleLoader__.load({
         [persist],
       );
 
-      // A drag writes straight to the DOM instead of React state: re-rendering
-      // the card subtree on every pointer move is what made touch drags laggy.
+      // A drag writes straight to the DOM instead of React state, and owns the
+      // pointer at the window capture stage: the shell's drawer gesture listens
+      // on document capture, which would otherwise see (and act on) the swipe.
       const liveRef = useRef(null);
+      const detachRef = useRef(null);
+
+      const commitDrag = useCallback(() => {
+        const last = liveRef.current;
+        if (last === null) return;
+        shared.frame = { left: last.left, top: last.top };
+        setFrame({ left: last.left, top: last.top });
+        persist(last);
+      }, [persist]);
 
       const onPointerDown = useCallback((event) => {
         if (event.button !== 0) return;
@@ -598,8 +608,8 @@ window.__ModuleLoader__.load({
         if (event.target instanceof Element && event.target.closest('button') !== null) return;
         const rect = rootRef.current?.getBoundingClientRect();
         if (!rect) return;
-        liveRef.current = { left: rect.left, top: rect.top };
-        dragRef.current = {
+        if (detachRef.current !== null) detachRef.current();
+        const drag = {
           id: event.pointerId,
           x: event.clientX,
           y: event.clientY,
@@ -609,76 +619,72 @@ window.__ModuleLoader__.load({
           height: rect.height,
           moved: false,
         };
-        // Capture right away: otherwise the first touches are swallowed by the
-        // browser's gesture detection (and by the shell's drawer swipe).
+        dragRef.current = drag;
+        liveRef.current = { left: rect.left, top: rect.top };
         event.currentTarget.setPointerCapture?.(event.pointerId);
-        if (event.pointerType !== 'mouse' && event.cancelable) event.preventDefault();
-      }, []);
 
-      const onPointerMove = useCallback((event) => {
-        const drag = dragRef.current;
-        if (!drag || drag.id !== event.pointerId) return;
-        const dx = event.clientX - drag.x;
-        const dy = event.clientY - drag.y;
-        if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-        drag.moved = true;
-        event.stopPropagation();
-        const width = drag.width > 0 ? drag.width : 120;
-        const height = drag.height > 0 ? drag.height : 40;
-        const next = {
-          left: clamp(drag.left + dx, 4, Math.max(4, window.innerWidth - width - 4)),
-          top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
+        const onMove = (moveEvent) => {
+          if (moveEvent.pointerId !== drag.id) return;
+          if (moveEvent.cancelable) moveEvent.preventDefault();
+          moveEvent.stopImmediatePropagation();
+          const dx = moveEvent.clientX - drag.x;
+          const dy = moveEvent.clientY - drag.y;
+          if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+          drag.moved = true;
+          const width = drag.width > 0 ? drag.width : 120;
+          const height = drag.height > 0 ? drag.height : 40;
+          const next = {
+            left: clamp(drag.left + dx, 4, Math.max(4, window.innerWidth - width - 4)),
+            top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
+          };
+          positionRef.current = next;
+          liveRef.current = next;
+          shared.frame = { left: next.left, top: next.top };
+          const node = rootRef.current;
+          if (node !== null) {
+            node.style.left = next.left + 'px';
+            node.style.top = next.top + 'px';
+            node.style.right = 'auto';
+            node.style.bottom = 'auto';
+          }
+          persistThrottled(next);
         };
-        positionRef.current = next;
-        liveRef.current = next;
-        shared.frame = { left: next.left, top: next.top };
-        const node = rootRef.current;
-        if (node !== null) {
-          node.style.left = next.left + 'px';
-          node.style.top = next.top + 'px';
-          node.style.right = 'auto';
-          node.style.bottom = 'auto';
-        }
-        persistThrottled(next);
-      }, [persistThrottled]);
-
-      /** Commit the dragged position to React state (drag finished). */
-      const commitDrag = useCallback(() => {
-        const drag = dragRef.current;
-        dragRef.current = null;
-        if (!drag || !drag.moved) return;
-        const last = liveRef.current;
-        if (last === null) return;
-        shared.frame = { left: last.left, top: last.top };
-        setFrame({ left: last.left, top: last.top });
-        persist(last);
-      }, [persist]);
-
-      const onPointerCancel = useCallback(() => {
-        commitDrag();
-      }, [commitDrag]);
-
-      // Capture can be lost (remount, window blur) before pointerup: keep the
-      // spot the user dragged to instead of reverting to the stored one.
-      const onLostPointerCapture = useCallback(() => {
-        commitDrag();
-      }, [commitDrag]);
-
-      const onPointerUp = useCallback(
-        (event) => {
-          const drag = dragRef.current;
-          if (!drag || drag.id !== event.pointerId) return;
+        // Some WebViews still deliver TouchEvents first: cancel those too, or
+        // the page pans and the shell treats the swipe as "open the drawer".
+        const onTouch = (touchEvent) => {
+          if (touchEvent.cancelable) touchEvent.preventDefault();
+          touchEvent.stopImmediatePropagation();
+        };
+        const detach = () => {
+          window.removeEventListener('pointermove', onMove, true);
+          window.removeEventListener('pointerup', onEnd, true);
+          window.removeEventListener('pointercancel', onEnd, true);
+          window.removeEventListener('touchmove', onTouch, true);
+          detachRef.current = null;
+        };
+        const onEnd = (endEvent) => {
+          if (endEvent.pointerId !== drag.id) return;
+          endEvent.stopImmediatePropagation();
+          detach();
+          dragRef.current = null;
           if (drag.moved) {
-            event.stopPropagation();
             commitDrag();
             return;
           }
-          dragRef.current = null;
           if (open) closeView();
           else openView();
-        },
-        [open, closeView, openView, commitDrag],
-      );
+        };
+        detachRef.current = detach;
+        window.addEventListener('pointermove', onMove, true);
+        window.addEventListener('pointerup', onEnd, true);
+        window.addEventListener('pointercancel', onEnd, true);
+        window.addEventListener('touchmove', onTouch, { capture: true, passive: false });
+      }, [persistThrottled, commitDrag, open, closeView, openView]);
+
+      useEffect(() => () => {
+        if (detachRef.current !== null) detachRef.current();
+        dragRef.current = null;
+      }, []);
 
       const now = Date.now() + offset;
       const peakActive = snapshot?.peak?.active === true;
@@ -721,11 +727,6 @@ window.__ModuleLoader__.load({
           'aria-label': t('title'),
           title: t('title'),
           onPointerDown,
-          onPointerMove,
-          onPointerUp,
-          onPointerCancel,
-          onLostPointerCapture,
-          onTouchStart: (event) => event.stopPropagation(),
           onKeyDown: (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
@@ -755,11 +756,6 @@ window.__ModuleLoader__.load({
             className: 'dbf-head',
             title: t('collapse'),
             onPointerDown,
-            onPointerMove,
-            onPointerUp,
-            onPointerCancel,
-            onLostPointerCapture,
-            onTouchStart: (event) => event.stopPropagation(),
           },
           dot,
           h('span', { className: 'dbf-head-title' }, t('title')),
