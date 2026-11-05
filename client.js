@@ -154,7 +154,7 @@ window.__ModuleLoader__.load({
     };
 
     const STYLE = [
-      '.dbf-root{position:fixed;z-index:50;pointer-events:auto;font-family:inherit;color:var(--dsw-alias-label-primary)}',
+      '.dbf-root{position:fixed;z-index:200;pointer-events:auto;font-family:inherit;color:var(--dsw-alias-label-primary)}',
       '.dbf-surface{position:relative;isolation:isolate}',
       '.dbf-surface::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--dsw-alias-bg-overlay);opacity:var(--dbf-bg,1);z-index:-1;pointer-events:none}',
       '.dbf-surface::after{content:"";position:absolute;inset:0;border-radius:inherit;border:.5px solid var(--dsw-alias-border-l1);opacity:var(--dbf-border,1);pointer-events:none}',
@@ -188,7 +188,7 @@ window.__ModuleLoader__.load({
       '.dbf-spinning svg{animation:dbf-spin .9s linear infinite}',
       '@keyframes dbf-spin{to{transform:rotate(360deg)}}',
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
-      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;touch-action:pan-y;overscroll-behavior:contain}',
+      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;touch-action:auto;overscroll-behavior:contain}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
       '.dbf-topup{flex:none;padding:2px 9px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;line-height:18px;cursor:pointer}',
@@ -233,7 +233,7 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-flash-up{0%{opacity:0;transform:translateY(4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(2px)}}',
       '.dbf-setting{padding:8px 11px;border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '.dbf-setting:last-child{border-bottom:0}',
-      '.dbf-range{display:block;width:100%;height:16px;margin:3px 0 0;accent-color:var(--dsw-alias-brand-primary);cursor:pointer}',
+      '.dbf-range{display:block;width:100%;height:24px;margin:2px 0 0;accent-color:var(--dsw-alias-brand-primary);cursor:pointer;touch-action:auto}',
       '.dbf-setting-val{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}',
       '.dbf-textbtn{padding:1px 9px;border:.5px solid var(--dsw-alias-border-l1);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;line-height:18px}',
       '.dbf-textbtn:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
@@ -389,6 +389,26 @@ window.__ModuleLoader__.load({
       if (Number.isFinite(frame.bottom)) out.bottom = frame.bottom + 'px';
       else out.top = frame.top + 'px';
       return out;
+    }
+
+    /**
+     * Bottom edge of the app's pinned top bar. The overlay can live in a lower
+     * stacking context than the header, so keep the pill below it instead of
+     * relying on z-index alone.
+     */
+    function topBarBottom(ownRoot) {
+      const nodes = [];
+      // Whatever paints at the top-centre of the viewport is the top bar; the
+      // element query is the fallback for layouts that put something else there.
+      const probe = document.elementFromPoint(Math.round(window.innerWidth / 2), 2);
+      if (probe instanceof Element && !(ownRoot instanceof Element && ownRoot.contains(probe))) nodes.push(probe);
+      nodes.push(...document.querySelectorAll('header, [role="banner"]'));
+      let bottom = 0;
+      for (const node of nodes) {
+        const rect = node.getBoundingClientRect();
+        if (rect.height >= 24 && rect.width >= 200 && rect.top <= 8) bottom = Math.max(bottom, rect.bottom);
+      }
+      return bottom;
     }
 
     /** Clamp a number. */
@@ -619,6 +639,7 @@ window.__ModuleLoader__.load({
           height: rect.height,
           moved: false,
         };
+        drag.guardTop = Math.min(Math.max(4, topBarBottom(rootRef.current) + 4), Math.max(4, window.innerHeight - rect.height - 4));
         dragRef.current = drag;
         liveRef.current = { left: rect.left, top: rect.top };
         event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -633,9 +654,11 @@ window.__ModuleLoader__.load({
           drag.moved = true;
           const width = drag.width > 0 ? drag.width : 120;
           const height = drag.height > 0 ? drag.height : 40;
+          const minTop = Number.isFinite(drag.guardTop) ? drag.guardTop : 4;
+          const maxTop = Math.max(minTop, window.innerHeight - height - 4);
           const next = {
             left: clamp(drag.left + dx, 4, Math.max(4, window.innerWidth - width - 4)),
-            top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
+            top: clamp(drag.top + dy, minTop, maxTop),
           };
           positionRef.current = next;
           liveRef.current = next;
