@@ -1,0 +1,41 @@
+{
+  "name": "@local/balance-float",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Floating Web UI pill that reads the locally saved DeepSeek usage ledger: API balance, today's spend, and current peak/off-peak pricing.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "bundle",
+    "balance",
+    "usage",
+    "peak",
+    "widget"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  }
+}

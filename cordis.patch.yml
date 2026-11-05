@@ -1,0 +1,16 @@
+# balance-float bundle patch.
+#
+# One row with two halves: the Host half (`exports["."]`) owns the local usage
+# ledger (turn accounting + balance poll) and serves a read-only JSON snapshot
+# from /balance-float/snapshot; the Client half (`exports["./client"]`, declared
+# by `dsh.client` in package.json) renders the floating pill in `shell.overlay`.
+#
+# Every path is optional: an empty value resolves the usual locations.
+- insert:
+    - id: balance-float
+      name: '@local/balance-float'
+      config:
+        storeFile: ''          # 账本路径，默认 $DSH_HOME/balance-float/usage.json
+        legacyFile: ''         # 首次运行的种子账本，默认 $DSH_HOME/.dshw-usage.json
+        refreshSeconds: 20     # 余额轮询间隔
+        apiKeyRef: DEEPSEEK_API_KEY

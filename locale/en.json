@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Balance Float",
+    "description": "Floating pill that reads the locally saved usage ledger and shows the API balance, today's spend and the current peak/off-peak pricing."
+  }
+}

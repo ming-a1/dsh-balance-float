@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Balance Float">
+  <defs>
+    <linearGradient id="dbf-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f7dff"/>
+      <stop offset="1" stop-color="#16b39b"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="9" width="54" height="46" rx="13" fill="url(#dbf-bg)"/>
+  <path d="M14 33h8.5l4.2-10.2 5.4 20.2 4.1-12.1H50"
+        fill="none" stroke="#ffffff" stroke-width="3.4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="50" cy="22" r="3.2" fill="#ffffff" opacity="0.9"/>
+</svg>
