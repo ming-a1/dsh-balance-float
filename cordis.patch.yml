@@ -8,7 +8,7 @@
 # Every path is optional: an empty value resolves the usual locations.
 - insert:
     - id: balance-float
-      name: '@local/balance-float'
+      name: 'dsh-balance-float'
       config:
         storeFile: ''          # 账本路径，默认 $DSH_HOME/balance-float/usage.json
         legacyFile: ''         # 首次运行的种子账本，默认 $DSH_HOME/.dshw-usage.json

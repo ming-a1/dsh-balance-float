@@ -3,6 +3,19 @@
 DSH Web UI 的悬浮小窗：显示当前 API 余额、今日已用、**每轮次消耗**和峰谷定价。
 Host 半边自己维护本地用量账本（按轮记账 + 余额轮询），浏览器半边只读快照。
 
+## 安装
+
+插件以 DSH profile bundle 的方式挂载（Host + Client 两半，无构建步骤）：
+
+```text
+github:ming-a1/dsh-balance-float
+```
+
+在 DSH 的插件管理里粘贴上面的 spec 即可；要固定版本用 `github:ming-a1/dsh-balance-float#v1.0.0`。
+本地开发可以用 `link:/path/to/balance-float`，改完刷新页面即可生效。
+
+启用后 profile 里会多出一行 `id: balance-float`，可在 `config` 里覆盖账本路径、轮询间隔和 `apiKeyRef`（默认 `DEEPSEEK_API_KEY`，取不到时余额相关数字保持不动，不会归零）。
+
 ## 两半
 
 | 半边 | 文件 | 作用 |
@@ -39,7 +52,7 @@ Host 半边自己维护本地用量账本（按轮记账 + 余额轮询），浏
 ```yaml
 - insert:
     - id: balance-float
-      name: '@local/balance-float'
+      name: 'dsh-balance-float'
       config:
         storeFile: ''          # 账本路径，默认 $DSH_HOME/balance-float/usage.json
         legacyFile: ''         # 首次运行的种子账本，默认 $DSH_HOME/.dshw-usage.json

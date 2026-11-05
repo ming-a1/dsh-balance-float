@@ -1,9 +1,17 @@
 {
-  "name": "@local/balance-float",
+  "name": "dsh-balance-float",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "description": "Floating Web UI pill that reads the locally saved DeepSeek usage ledger: API balance, today's spend, and current peak/off-peak pricing.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ming-a1/dsh-balance-float.git"
+  },
+  "homepage": "https://github.com/ming-a1/dsh-balance-float#readme",
+  "bugs": {
+    "url": "https://github.com/ming-a1/dsh-balance-float/issues"
+  },
   "keywords": [
     "deepseek-harness",
     "dsh",

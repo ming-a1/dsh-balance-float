@@ -10,7 +10,7 @@
  * goes through the Client locale service so it follows the active language.
  */
 window.__ModuleLoader__.load({
-  id: '@local/balance-float',
+  id: 'dsh-balance-float',
   factory(require) {
     const React = require('react');
     const { useCallback, useEffect, useRef, useState } = React;
