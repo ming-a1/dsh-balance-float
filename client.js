@@ -28,6 +28,9 @@ window.__ModuleLoader__.load({
     const POLL_MS = 4000;
     const DEFAULT_CORNER = { right: 18, bottom: 84 };
     const CARD_WIDTH = 316;
+    // The composer occupies the bottom band of the Web UI; a bubble needs this
+    // much clear space underneath before it is allowed to open downward.
+    const BUBBLE_MIN_ROOM = 120;
 
     const ZH = {
       title: 'API 余额',
@@ -410,13 +413,14 @@ window.__ModuleLoader__.load({
         return () => window.clearInterval(id);
       }, []);
 
-      // Flip the turn bubble above the pill when the space below is too small.
+      // Flip the turn bubble above the pill when the space below is too small
+      // (the composer sits there). Re-measure when the view or the pill moves.
       useEffect(() => {
-        if (!flash) return;
+        if (!flash || open || settingsOpen) return;
         const rect = rootRef.current?.getBoundingClientRect();
         if (!rect) return;
-        setBubbleUp(window.innerHeight - rect.bottom < 66);
-      }, [flash]);
+        setBubbleUp(window.innerHeight - rect.bottom < BUBBLE_MIN_ROOM);
+      }, [flash, open, settingsOpen, frame]);
 
       // Appearance lives in this browser profile only.
       useEffect(() => {
