@@ -158,7 +158,7 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-fade{from{opacity:0}to{opacity:1}}',
       '.dbf-card.dbf-leaving,.dbf-pill.dbf-leaving{animation:dbf-collapse-down .18s cubic-bezier(.4,0,.7,.6) forwards !important;pointer-events:none;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card.dbf-leaving,.dbf-dir-up .dbf-pill.dbf-leaving{animation-name:dbf-collapse-up !important}',
-      '.dbf-pill{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:999px;background:transparent;box-shadow:0 6px 22px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));font-size:12px;line-height:20px;white-space:nowrap;cursor:grab;user-select:none;touch-action:none;animation:dbf-open-down .22s cubic-bezier(.22,.61,.36,1) both;will-change:transform,opacity}',
+      '.dbf-pill{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:999px;background:transparent;box-shadow:0 6px 22px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));font-size:12px;line-height:20px;white-space:nowrap;cursor:grab;user-select:none;touch-action:none;animation:dbf-fade .16s ease-out both}',
       '.dbf-dir-up .dbf-pill{animation-name:dbf-fade}',
       '.dbf-pill:active{cursor:grabbing}',
       '.dbf-pill-sep{width:.5px;height:12px;background:var(--dsw-alias-border-l2)}',
@@ -183,7 +183,7 @@ window.__ModuleLoader__.load({
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
       '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
-      '.dbf-countdown{margin-top:7px;margin-bottom:3px;font-size:12px;line-height:19px;letter-spacing:.01em}',
+      '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
       '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
       '.dbf-rule{display:flex;align-items:flex-start;gap:6px}',
       '.dbf-rule-tag{flex:none;font-weight:600;font-size:11px;line-height:16px;min-width:2.2em}',
@@ -269,11 +269,14 @@ window.__ModuleLoader__.load({
       const hours = Math.floor((total % 86400) / 3600);
       const minutes = Math.floor((total % 3600) / 60);
       const seconds = total % 60;
+      // Two-digit minutes/seconds: single-digit values made the pill change
+      // width every few seconds, which read as the widget jumping around.
+      const pad = (value) => (value < 10 ? '0' + value : String(value));
       const parts = [];
       if (days > 0) parts.push(days + t('unit.d'));
       if (days > 0 || hours > 0) parts.push(hours + t('unit.h'));
-      if (days > 0 || hours > 0 || minutes > 0) parts.push(minutes + t('unit.m'));
-      parts.push(seconds + t('unit.s'));
+      if (days > 0 || hours > 0 || minutes > 0) parts.push(pad(minutes) + t('unit.m'));
+      parts.push(pad(seconds) + t('unit.s'));
       return parts.join('');
     }
 
@@ -383,6 +386,11 @@ window.__ModuleLoader__.load({
       return Math.min(Math.max(value, min), max);
     }
 
+    // The shell can re-mount the overlay when a run starts or stops. Component
+    // state is lost then, so the live position lives at module scope too: a
+    // remount must not snap the widget back to the stored default.
+    const shared = { frame: null, dir: 'up' };
+
     /** The floating pill and its expanded card. */
     function BalanceFloat(props) {
       const t = props.t;
@@ -393,8 +401,8 @@ window.__ModuleLoader__.load({
       const [settingsOpen, setSettingsOpen] = useState(false);
       const [leaving, setLeaving] = useState(false);
       const [appearance, setAppearance] = useState(readAppearance);
-      const [frame, setFrame] = useState(readPosition);
-      const [dir, setDir] = useState('up');
+      const [frame, setFrame] = useState(() => shared.frame ?? readPosition());
+      const [dir, setDir] = useState(shared.dir);
       const rootRef = useRef(null);
       const dragRef = useRef(null);
       const positionRef = useRef(null);
@@ -406,6 +414,14 @@ window.__ModuleLoader__.load({
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
+      // Mirror the frame/direction out of React state for the next mount.
+      useEffect(() => {
+        shared.frame = frame;
+      }, [frame]);
+      useEffect(() => {
+        shared.dir = dir;
+      }, [dir]);
+
       // Forces a re-render so the countdown text follows the clock.
       const [, setTick] = useState(0);
       // Host/browser clock offset, so the switch countdown follows the Host.
@@ -556,7 +572,10 @@ window.__ModuleLoader__.load({
       const flushPending = useCallback(() => {
         const pending = pendingRef.current;
         pendingRef.current = null;
-        if (pending !== null && aliveRef.current) setFrame({ left: pending.left, top: pending.top });
+        if (pending !== null && aliveRef.current) {
+          shared.frame = { left: pending.left, top: pending.top };
+          setFrame({ left: pending.left, top: pending.top });
+        }
       }, []);
       const stopRaf = useCallback(() => {
         if (rafRef.current !== 0) {
@@ -613,6 +632,7 @@ window.__ModuleLoader__.load({
         };
         positionRef.current = next;
         pendingRef.current = next;
+        shared.frame = { left: next.left, top: next.top };
         persistThrottled(next);
         if (rafRef.current === 0) {
           rafRef.current = window.requestAnimationFrame(() => {
