@@ -181,7 +181,9 @@ window.__ModuleLoader__.load({
       '.dbf-spinning svg{animation:dbf-spin .9s linear infinite}',
       '@keyframes dbf-spin{to{transform:rotate(360deg)}}',
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
-      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto}',
+      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}',
+      '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
+      '.dbf-countdown{margin-top:7px;margin-bottom:3px;font-size:12px;line-height:19px;letter-spacing:.01em}',
       '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
       '.dbf-rule{display:flex;align-items:flex-start;gap:6px}',
       '.dbf-rule-tag{flex:none;font-weight:600;font-size:11px;line-height:16px;min-width:2.2em}',
@@ -810,7 +812,7 @@ window.__ModuleLoader__.load({
           ),
           h(
             'div',
-            { className: 'dbf-sub', style: { marginTop: '3px' } },
+            { className: 'dbf-sub dbf-countdown' },
             countdown !== ''
               ? t('peak.next', { label: peakActive ? t('valley') : t('peak.label'), time: countdown })
               : t('peak.noNext'),
