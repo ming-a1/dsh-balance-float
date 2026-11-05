@@ -38,7 +38,7 @@ window.__ModuleLoader__.load({
       'balance.noStart': '今日已用 {used}',
       today: '今日已用',
       turn: '本轮消耗',
-      'turn.bubble': '本轮 {amount}',
+      'turn.label': '本轮',
       'turn.meta': '{time} · {tokens} tokens',
       'turn.empty': '本轮暂无记录',
       'today.calls': '{count} 次调用 · {tokens} tokens',
@@ -92,7 +92,7 @@ window.__ModuleLoader__.load({
       'balance.noStart': 'Used today {used}',
       today: 'Used today',
       turn: 'Last turn',
-      'turn.bubble': 'Turn {amount}',
+      'turn.label': 'Turn',
       'turn.meta': '{time} · {tokens} tokens',
       'turn.empty': 'No turn recorded yet',
       'today.calls': '{count} calls · {tokens} tokens',
@@ -198,9 +198,11 @@ window.__ModuleLoader__.load({
       '.dbf-bar-day{color:var(--dsw-alias-label-secondary);font-size:9.5px;line-height:12px;font-variant-numeric:tabular-nums}',
       '.dbf-foot{display:flex;align-items:center;gap:6px;padding:7px 11px;background:transparent;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:14px}',
       '.dbf-foot-path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.dbf-bubble{position:absolute;top:calc(100% + 8px);left:4px;padding:3px 9px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));font-size:11px;line-height:16px;white-space:nowrap;pointer-events:none;animation:dbf-flash 3s ease forwards}',
+      '.dbf-bubble{position:absolute;top:calc(100% + 8px);left:4px;display:flex;align-items:baseline;gap:6px;padding:5px 12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,calc(.18 * var(--dbf-shadow,1)));font-size:13px;line-height:19px;white-space:nowrap;pointer-events:none;animation:dbf-flash 3s ease forwards}',
+      '.dbf-bubble-label{color:var(--dsw-alias-label-secondary)}',
+      '.dbf-bubble-amount{font-weight:600;font-variant-numeric:tabular-nums}',
       '.dbf-bubble.is-up{top:auto;bottom:calc(100% + 8px);animation-name:dbf-flash-up}',
-      '.dbf-bubble-caret{position:absolute;top:-4px;left:12px;width:8px;height:8px;transform:rotate(45deg);background:var(--dsw-alias-bg-overlay);opacity:var(--dbf-bg,1);border-left:.5px solid var(--dsw-alias-border-l1);border-top:.5px solid var(--dsw-alias-border-l1);pointer-events:none}',
+      '.dbf-bubble-caret{position:absolute;top:-4px;left:14px;width:8px;height:8px;transform:rotate(45deg);background:var(--dsw-alias-bg-overlay);opacity:var(--dbf-bg,1);border-left:.5px solid var(--dsw-alias-border-l1);border-top:.5px solid var(--dsw-alias-border-l1);pointer-events:none}',
       '.dbf-bubble.is-up .dbf-bubble-caret{top:auto;bottom:-4px;border-left:0;border-top:0;border-right:.5px solid var(--dsw-alias-border-l1);border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '@keyframes dbf-flash{0%{opacity:0;transform:translateY(-4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-2px)}}',
       '@keyframes dbf-flash-up{0%{opacity:0;transform:translateY(4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(2px)}}',
@@ -413,7 +415,7 @@ window.__ModuleLoader__.load({
         if (!flash) return;
         const rect = rootRef.current?.getBoundingClientRect();
         if (!rect) return;
-        setBubbleUp(window.innerHeight - rect.bottom < 56);
+        setBubbleUp(window.innerHeight - rect.bottom < 66);
       }, [flash]);
 
       // Appearance lives in this browser profile only.
@@ -922,7 +924,8 @@ window.__ModuleLoader__.load({
               'div',
               { key: 'bubble', className: 'dbf-bubble dbf-surface' + (bubbleUp ? ' is-up' : ''), 'aria-live': 'polite' },
               h('span', { className: 'dbf-bubble-caret', 'aria-hidden': true }),
-              t('turn.bubble', { amount: '¥' + money(turn.cost) }),
+              h('span', { className: 'dbf-bubble-label' }, t('turn.label')),
+              h('span', { className: 'dbf-bubble-amount' }, '¥' + money(turn.cost)),
             )
           : null;
 
