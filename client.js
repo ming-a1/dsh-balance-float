@@ -233,7 +233,11 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-flash-up{0%{opacity:0;transform:translateY(4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(2px)}}',
       '.dbf-setting{padding:8px 11px;border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '.dbf-setting:last-child{border-bottom:0}',
-      '.dbf-range{display:block;width:100%;height:24px;margin:2px 0 0;accent-color:var(--dsw-alias-brand-primary);cursor:pointer;touch-action:auto}',
+      '.dbf-track{position:relative;height:26px;margin:2px 0 0;cursor:pointer;touch-action:none;border-radius:6px}',
+      '.dbf-track:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#4d6bfe);outline-offset:2px}',
+      '.dbf-track-rail{position:absolute;left:0;right:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-border-l1)}',
+      '.dbf-track-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe)}',
+      '.dbf-track-thumb{position:absolute;top:50%;width:14px;height:14px;margin-left:-7px;transform:translateY(-50%);border-radius:50%;background:var(--dsw-alias-bg-overlay);border:2px solid var(--dsw-alias-brand-primary,#4d6bfe);box-shadow:0 1px 3px rgba(0,0,0,calc(.3 * var(--dbf-shadow,1)))}',
       '.dbf-setting-val{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}',
       '.dbf-textbtn{padding:1px 9px;border:.5px solid var(--dsw-alias-border-l1);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;line-height:18px}',
       '.dbf-textbtn:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
@@ -621,6 +625,50 @@ window.__ModuleLoader__.load({
         setFrame({ left: last.left, top: last.top });
         persist(last);
       }, [persist]);
+
+      /**
+       * Appearance slider. A native <input type=range> loses the gesture to the
+       * shell (the horizontal drag pans the frame and opens the sidebar), so the
+       * track computes the value itself and blocks the swipe at window capture.
+       */
+      const startSlider = useCallback(
+        (key, max, event) => {
+          const track = event.currentTarget;
+          const rect = track.getBoundingClientRect();
+          const apply = (clientX) => {
+            const ratio = clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+            changeAppearance(key, clamp(Math.round((ratio * max) / 5) * 5, 0, max));
+          };
+          apply(event.clientX);
+          track.setPointerCapture?.(event.pointerId);
+          const onMove = (moveEvent) => {
+            if (moveEvent.pointerId !== event.pointerId) return;
+            moveEvent.stopImmediatePropagation();
+            if (moveEvent.cancelable) moveEvent.preventDefault();
+            apply(moveEvent.clientX);
+          };
+          const onTouch = (touchEvent) => {
+            touchEvent.stopImmediatePropagation();
+            if (touchEvent.cancelable) touchEvent.preventDefault();
+          };
+          const detach = () => {
+            window.removeEventListener('pointermove', onMove, true);
+            window.removeEventListener('pointerup', onEnd, true);
+            window.removeEventListener('pointercancel', onEnd, true);
+            window.removeEventListener('touchmove', onTouch, true);
+          };
+          const onEnd = (endEvent) => {
+            if (endEvent.pointerId !== event.pointerId) return;
+            endEvent.stopImmediatePropagation();
+            detach();
+          };
+          window.addEventListener('pointermove', onMove, true);
+          window.addEventListener('pointerup', onEnd, true);
+          window.addEventListener('pointercancel', onEnd, true);
+          window.addEventListener('touchmove', onTouch, { capture: true, passive: false });
+        },
+        [changeAppearance],
+      );
 
       const onPointerDown = useCallback((event) => {
         if (event.button !== 0) return;
@@ -1021,8 +1069,10 @@ window.__ModuleLoader__.load({
 
       let settingsPanel = null;
       if (settingsOpen || leaving) {
-        const settingsRow = (key, label, value) =>
-          h(
+        const settingsRow = (key, label, value) => {
+          const max = key === 'bg' ? 90 : 100;
+          const percent = (value / max) * 100;
+          return h(
             'div',
             { className: 'dbf-setting' },
             h(
@@ -1031,17 +1081,35 @@ window.__ModuleLoader__.load({
               h('span', { className: 'dbf-label' }, label),
               h('span', { className: 'dbf-setting-val' }, value + '%'),
             ),
-            h('input', {
-              type: 'range',
-              className: 'dbf-range',
-              min: 0,
-              max: key === 'bg' ? 90 : 100,
-              step: 5,
-              value,
-              'aria-label': label,
-              onChange: (event) => changeAppearance(key, Number(event.target.value)),
-            }),
+            h(
+              'div',
+              {
+                className: 'dbf-track',
+                role: 'slider',
+                tabIndex: 0,
+                'aria-label': label,
+                'aria-valuemin': 0,
+                'aria-valuemax': max,
+                'aria-valuenow': value,
+                onPointerDown: (event) => {
+                  if (event.button === 0) startSlider(key, max, event);
+                },
+                onKeyDown: (event) => {
+                  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    changeAppearance(key, clamp(value - 5, 0, max));
+                  } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    changeAppearance(key, clamp(value + 5, 0, max));
+                  }
+                },
+              },
+              h('div', { className: 'dbf-track-rail' }),
+              h('div', { className: 'dbf-track-fill', style: { width: percent + '%' } }),
+              h('div', { className: 'dbf-track-thumb', style: { left: percent + '%' } }),
+            ),
           );
+        };
 
         settingsPanel = h(
           'div',
