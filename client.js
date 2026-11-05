@@ -188,7 +188,7 @@ window.__ModuleLoader__.load({
       '.dbf-spinning svg{animation:dbf-spin .9s linear infinite}',
       '@keyframes dbf-spin{to{transform:rotate(360deg)}}',
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
-      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}',
+      '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;touch-action:pan-y;overscroll-behavior:contain}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
       '.dbf-topup{flex:none;padding:2px 9px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;line-height:18px;cursor:pointer}',
@@ -576,24 +576,6 @@ window.__ModuleLoader__.load({
         }
       }, []);
 
-      // Coalesce pointer moves into one state update per frame.
-      const rafRef = useRef(0);
-      const pendingRef = useRef(null);
-      const flushPending = useCallback(() => {
-        const pending = pendingRef.current;
-        pendingRef.current = null;
-        if (pending !== null && aliveRef.current) {
-          shared.frame = { left: pending.left, top: pending.top };
-          setFrame({ left: pending.left, top: pending.top });
-        }
-      }, []);
-      const stopRaf = useCallback(() => {
-        if (rafRef.current !== 0) {
-          window.cancelAnimationFrame(rafRef.current);
-          rafRef.current = 0;
-        }
-      }, []);
-
       // localStorage writes are synchronous: during a drag keep them rare.
       const lastPersistRef = useRef(0);
       const persistThrottled = useCallback(
@@ -606,12 +588,17 @@ window.__ModuleLoader__.load({
         [persist],
       );
 
+      // A drag writes straight to the DOM instead of React state: re-rendering
+      // the card subtree on every pointer move is what made touch drags laggy.
+      const liveRef = useRef(null);
+
       const onPointerDown = useCallback((event) => {
         if (event.button !== 0) return;
         // The header also carries buttons: a click there is not a drag/collapse.
         if (event.target instanceof Element && event.target.closest('button') !== null) return;
         const rect = rootRef.current?.getBoundingClientRect();
         if (!rect) return;
+        liveRef.current = { left: rect.left, top: rect.top };
         dragRef.current = {
           id: event.pointerId,
           x: event.clientX,
@@ -622,6 +609,10 @@ window.__ModuleLoader__.load({
           height: rect.height,
           moved: false,
         };
+        // Capture right away: otherwise the first touches are swallowed by the
+        // browser's gesture detection (and by the shell's drawer swipe).
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        if (event.pointerType !== 'mouse' && event.cancelable) event.preventDefault();
       }, []);
 
       const onPointerMove = useCallback((event) => {
@@ -630,10 +621,8 @@ window.__ModuleLoader__.load({
         const dx = event.clientX - drag.x;
         const dy = event.clientY - drag.y;
         if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-        if (!drag.moved) {
-          drag.moved = true;
-          event.currentTarget.setPointerCapture?.(event.pointerId);
-        }
+        drag.moved = true;
+        event.stopPropagation();
         const width = drag.width > 0 ? drag.width : 120;
         const height = drag.height > 0 ? drag.height : 40;
         const next = {
@@ -641,46 +630,54 @@ window.__ModuleLoader__.load({
           top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
         };
         positionRef.current = next;
-        pendingRef.current = next;
+        liveRef.current = next;
         shared.frame = { left: next.left, top: next.top };
-        persistThrottled(next);
-        if (rafRef.current === 0) {
-          rafRef.current = window.requestAnimationFrame(() => {
-            rafRef.current = 0;
-            flushPending();
-          });
+        const node = rootRef.current;
+        if (node !== null) {
+          node.style.left = next.left + 'px';
+          node.style.top = next.top + 'px';
+          node.style.right = 'auto';
+          node.style.bottom = 'auto';
         }
-      }, [persistThrottled, flushPending]);
+        persistThrottled(next);
+      }, [persistThrottled]);
+
+      /** Commit the dragged position to React state (drag finished). */
+      const commitDrag = useCallback(() => {
+        const drag = dragRef.current;
+        dragRef.current = null;
+        if (!drag || !drag.moved) return;
+        const last = liveRef.current;
+        if (last === null) return;
+        shared.frame = { left: last.left, top: last.top };
+        setFrame({ left: last.left, top: last.top });
+        persist(last);
+      }, [persist]);
 
       const onPointerCancel = useCallback(() => {
-        stopRaf();
-        flushPending();
-        dragRef.current = null;
-      }, [stopRaf, flushPending]);
+        commitDrag();
+      }, [commitDrag]);
 
       // Capture can be lost (remount, window blur) before pointerup: keep the
       // spot the user dragged to instead of reverting to the stored one.
       const onLostPointerCapture = useCallback(() => {
-        stopRaf();
-        flushPending();
-        if (positionRef.current) persist(positionRef.current);
-        dragRef.current = null;
-      }, [stopRaf, flushPending, persist]);
+        commitDrag();
+      }, [commitDrag]);
 
       const onPointerUp = useCallback(
         (event) => {
           const drag = dragRef.current;
           if (!drag || drag.id !== event.pointerId) return;
-          dragRef.current = null;
           if (drag.moved) {
-            flushPending();
-            if (positionRef.current) persist(positionRef.current);
+            event.stopPropagation();
+            commitDrag();
             return;
           }
+          dragRef.current = null;
           if (open) closeView();
           else openView();
         },
-        [persist, flushPending, open, closeView, openView],
+        [open, closeView, openView, commitDrag],
       );
 
       const now = Date.now() + offset;
@@ -696,7 +693,8 @@ window.__ModuleLoader__.load({
       const models = Array.isArray(snapshot?.models) ? snapshot.models : [];
       const turn = snapshot?.turn ?? null;
 
-      const style = frame ? frameStyle(frame) : { right: DEFAULT_CORNER.right + 'px', bottom: DEFAULT_CORNER.bottom + 'px' };
+      const liveFrame = dragRef.current !== null && liveRef.current !== null ? liveRef.current : frame;
+      const style = liveFrame ? frameStyle(liveFrame) : { right: DEFAULT_CORNER.right + 'px', bottom: DEFAULT_CORNER.bottom + 'px' };
       // Unfolding downward must not run off the viewport: cap the card and let
       // its body scroll.
       const cardStyle =
@@ -727,6 +725,7 @@ window.__ModuleLoader__.load({
           onPointerUp,
           onPointerCancel,
           onLostPointerCapture,
+          onTouchStart: (event) => event.stopPropagation(),
           onKeyDown: (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
@@ -759,7 +758,8 @@ window.__ModuleLoader__.load({
             onPointerMove,
             onPointerUp,
             onPointerCancel,
-          onLostPointerCapture,
+            onLostPointerCapture,
+            onTouchStart: (event) => event.stopPropagation(),
           },
           dot,
           h('span', { className: 'dbf-head-title' }, t('title')),
