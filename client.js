@@ -414,13 +414,14 @@ window.__ModuleLoader__.load({
       }, []);
 
       // Flip the turn bubble above the pill when the space below is too small
-      // (the composer sits there). Re-measure when the view or the pill moves.
+      // (the composer sits there). Re-measure on view changes only: doing it on
+      // every drag frame would force a layout read per pointer move.
       useEffect(() => {
         if (!flash || open || settingsOpen) return;
         const rect = rootRef.current?.getBoundingClientRect();
         if (!rect) return;
         setBubbleUp(window.innerHeight - rect.bottom < BUBBLE_MIN_ROOM);
-      }, [flash, open, settingsOpen, frame]);
+      }, [flash, open, settingsOpen]);
 
       // Appearance lives in this browser profile only.
       useEffect(() => {
@@ -537,6 +538,33 @@ window.__ModuleLoader__.load({
         }
       }, []);
 
+      // Coalesce pointer moves into one state update per frame.
+      const rafRef = useRef(0);
+      const pendingRef = useRef(null);
+      const flushPending = useCallback(() => {
+        const pending = pendingRef.current;
+        pendingRef.current = null;
+        if (pending !== null && aliveRef.current) setFrame({ left: pending.left, top: pending.top });
+      }, []);
+      const stopRaf = useCallback(() => {
+        if (rafRef.current !== 0) {
+          window.cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+      }, []);
+
+      // localStorage writes are synchronous: during a drag keep them rare.
+      const lastPersistRef = useRef(0);
+      const persistThrottled = useCallback(
+        (next) => {
+          const now = Date.now();
+          if (now - lastPersistRef.current < 250) return;
+          lastPersistRef.current = now;
+          persist(next);
+        },
+        [persist],
+      );
+
       const onPointerDown = useCallback((event) => {
         if (event.button !== 0) return;
         // The header also carries buttons: a click there is not a drag/collapse.
@@ -549,6 +577,8 @@ window.__ModuleLoader__.load({
           y: event.clientY,
           left: rect.left,
           top: rect.top,
+          width: rect.width,
+          height: rect.height,
           moved: false,
         };
       }, []);
@@ -563,19 +593,37 @@ window.__ModuleLoader__.load({
           drag.moved = true;
           event.currentTarget.setPointerCapture?.(event.pointerId);
         }
-        const width = rootRef.current?.offsetWidth ?? 120;
-        const height = rootRef.current?.offsetHeight ?? 40;
+        const width = drag.width > 0 ? drag.width : 120;
+        const height = drag.height > 0 ? drag.height : 40;
         const next = {
           left: clamp(drag.left + dx, 4, Math.max(4, window.innerWidth - width - 4)),
           top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
         };
         positionRef.current = next;
-        setFrame({ left: next.left, top: next.top });
-      }, []);
+        pendingRef.current = next;
+        persistThrottled(next);
+        if (rafRef.current === 0) {
+          rafRef.current = window.requestAnimationFrame(() => {
+            rafRef.current = 0;
+            flushPending();
+          });
+        }
+      }, [persistThrottled, flushPending]);
 
       const onPointerCancel = useCallback(() => {
+        stopRaf();
+        flushPending();
         dragRef.current = null;
-      }, []);
+      }, [stopRaf, flushPending]);
+
+      // Capture can be lost (remount, window blur) before pointerup: keep the
+      // spot the user dragged to instead of reverting to the stored one.
+      const onLostPointerCapture = useCallback(() => {
+        stopRaf();
+        flushPending();
+        if (positionRef.current) persist(positionRef.current);
+        dragRef.current = null;
+      }, [stopRaf, flushPending, persist]);
 
       const onPointerUp = useCallback(
         (event) => {
@@ -583,13 +631,14 @@ window.__ModuleLoader__.load({
           if (!drag || drag.id !== event.pointerId) return;
           dragRef.current = null;
           if (drag.moved) {
+            flushPending();
             if (positionRef.current) persist(positionRef.current);
             return;
           }
           if (open) closeView();
           else openView();
         },
-        [persist, open, closeView, openView],
+        [persist, flushPending, open, closeView, openView],
       );
 
       const now = Date.now() + offset;
@@ -635,6 +684,7 @@ window.__ModuleLoader__.load({
           onPointerMove,
           onPointerUp,
           onPointerCancel,
+          onLostPointerCapture,
           onKeyDown: (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
@@ -654,274 +704,284 @@ window.__ModuleLoader__.load({
         countdown !== '' ? h('span', { className: 'dbf-num' }, countdown) : null,
       );
 
-      const header = h(
-        'div',
-        {
-          className: 'dbf-head',
-          title: t('collapse'),
-          onPointerDown,
-          onPointerMove,
-          onPointerUp,
-          onPointerCancel,
-        },
-        dot,
-        h('span', { className: 'dbf-head-title' }, t('title')),
-        h(
-          'button',
+      // The card subtree is only built when it can be seen: rebuilding ~150
+      // elements on every 1s tick / pointer move is avoidable work.
+      let card = null;
+      if (open || leaving) {
+        const header = h(
+          'div',
           {
-            type: 'button',
-            className: 'dbf-icon',
-            title: t('settings.open'),
-            'aria-label': t('settings.open'),
-            onClick: () => setSettingsOpen(true),
+            className: 'dbf-head',
+            title: t('collapse'),
+            onPointerDown,
+            onPointerMove,
+            onPointerUp,
+            onPointerCancel,
+          onLostPointerCapture,
           },
-          h(SettingsIcon),
-        ),
-        h(
-          'button',
-          {
-            type: 'button',
-            className: busy ? 'dbf-icon dbf-spinning' : 'dbf-icon',
-            title: t('refresh'),
-            'aria-label': t('refresh'),
-            onClick: () => load(true),
-            disabled: busy,
-          },
-          h(RefreshIcon),
-        ),
-      );
-
-      const balanceBlock = h(
-        'div',
-        { className: 'dbf-block' },
-        h('div', { className: 'dbf-balance' }, '¥' + money(snapshot?.balance)),
-        h(
-          'div',
-          { className: 'dbf-sub' },
-          typeof snapshot?.dayStart === 'number'
-            ? t('balance.note', { start: '¥' + money(snapshot.dayStart), used: '¥' + money(snapshot.todayUsed) })
-            : t('balance.noStart', { used: '¥' + money(snapshot?.todayUsed) }),
-        ),
-        h(
-          'div',
-          { className: 'dbf-row', style: { marginTop: '7px' } },
-          h('span', { className: 'dbf-label' }, t('today')),
-          h('span', { className: 'dbf-num' }, '¥' + money(snapshot?.todayUsed)),
-        ),
-        h(
-          'div',
-          { className: 'dbf-sub', style: { marginTop: '1px' } },
-          t('today.calls', { count: snapshot?.todayCalls ?? 0, tokens: tokens(snapshot?.todayTokens ?? 0) }),
-        ),
-        h(
-          'div',
-          { className: 'dbf-sub', style: { marginTop: '1px' } },
-          t('today.split', { peak: '¥' + money(snapshot?.todayPeakCost), valley: '¥' + money(snapshot?.todayValleyCost) }),
-        ),
-        h(
-          'div',
-          { className: 'dbf-row', style: { marginTop: '7px', paddingTop: '7px', borderTop: '.5px solid var(--dsw-alias-border-l1)' } },
-          h('span', { className: 'dbf-label' }, t('turn')),
-          h('span', { className: 'dbf-num' }, '¥' + money(turn?.cost)),
-        ),
-        h(
-          'div',
-          { className: 'dbf-sub', style: { marginTop: '1px' } },
-          turn === null
-            ? t('turn.empty')
-            : t('turn.meta', { time: clock(turn.at), tokens: tokens(turn.tokens) }),
-        ),
-        stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
-      );
-
-      const peakBlock = h(
-        'div',
-        { className: 'dbf-block' },
-        h(
-          'div',
-          { className: 'dbf-row' },
-          h('span', { className: 'dbf-row-title ' + periodClass }, dot, t('peak.now', { label: periodLabel })),
-          h('span', { className: 'dbf-badge ' + periodClass }, periodLabel),
-        ),
-        h(
-          'div',
-          { className: 'dbf-sub', style: { marginTop: '3px' } },
-          countdown !== ''
-            ? t('peak.next', { label: peakActive ? t('valley') : t('peak.label'), time: countdown })
-            : t('peak.noNext'),
-        ),
-        h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('schedule')),
-      );
-
-      const priceTable = h(
-        'div',
-        { className: 'dbf-block' },
-        h(
-          'div',
-          { className: 'dbf-row-title' },
-          t('prices'),
+          dot,
+          h('span', { className: 'dbf-head-title' }, t('title')),
           h(
-            'span',
-            { className: 'dbf-sub', style: { marginLeft: '6px', fontWeight: 400 } },
-            '(',
-            h('span', { className: 'dbf-valley' }, t('prices.off')),
-            ' / ',
-            h('span', { className: 'dbf-peak' }, t('prices.peak')),
-            ')',
+            'button',
+            {
+              type: 'button',
+              className: 'dbf-icon',
+              title: t('settings.open'),
+              'aria-label': t('settings.open'),
+              onClick: () => setSettingsOpen(true),
+            },
+            h(SettingsIcon),
           ),
-        ),
-        prices.length === 0
-          ? null
-          : h(
-              'table',
-              { className: 'dbf-table' },
-              h(
-                'thead',
-                null,
-                h(
-                  'tr',
-                  null,
-                  h('th', null, ''),
-                  h('th', null, t('price.hit')),
-                  h('th', null, t('price.miss')),
-                  h('th', null, t('price.out')),
-                ),
-              ),
-              h(
-                'tbody',
-                null,
-                prices.map((row) =>
-                  h(
-                    'tr',
-                    { key: row.key },
-                    h('td', null, modelLabel(row.model)),
-                    h('td', null, pair(row.hit, peakActive)),
-                    h('td', null, pair(row.miss, peakActive)),
-                    h('td', null, pair(row.out, peakActive)),
-                  ),
-                ),
-              ),
-            ),
-        models.length > 0
-          ? h(
-              'div',
-              { className: 'dbf-sub', style: { marginTop: '6px' } },
-              models.map((row) => modelLabel(row.model) + ' ¥' + money(row.cost)).join(' · '),
-            )
-          : null,
-      );
-
-      const historyBlock = h(
-        'div',
-        { className: 'dbf-block' },
-        h(
-          'div',
-          { className: 'dbf-row' },
-          h('span', { className: 'dbf-row-title' }, t('history')),
-          h('span', { className: 'dbf-sub' }, t('history.total', { total: '¥' + money(snapshot?.historyTotal) })),
-        ),
-        h(
-          'div',
-          { className: 'dbf-bars' },
-          history.map((row) => {
-            const value = typeof row.cost === 'number' ? row.cost : 0;
-            const ratio = historyMax > 0 ? Math.max(2, Math.round((value / historyMax) * 38)) : 2;
-            const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
-            return h(
-              'div',
-              { key: row.day, className: 'dbf-bar' + (isToday ? ' is-today' : ''), title: row.day + ' ¥' + money(value) },
-              h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
-              h('div', { className: 'dbf-bar-day' }, row.day.slice(5)),
-            );
-          }),
-        ),
-      );
-
-      const footer = h(
-        'div',
-        { className: 'dbf-foot' },
-        h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, t('source')),
-        h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
-      );
-
-      const body = [];
-      if (failure !== '' && snapshot === null) {
-        body.push(
           h(
-            'div',
-            { className: 'dbf-block' },
-            h('div', { className: 'dbf-error' }, t('error.fetch') + ': ' + failure),
-            h(
-              'button',
-              { type: 'button', className: 'dbf-icon', onClick: () => load(true), style: { width: 'auto', padding: '0 8px', marginTop: '6px' } },
-              t('retry'),
-            ),
+            'button',
+            {
+              type: 'button',
+              className: busy ? 'dbf-icon dbf-spinning' : 'dbf-icon',
+              title: t('refresh'),
+              'aria-label': t('refresh'),
+              onClick: () => load(true),
+              disabled: busy,
+            },
+            h(RefreshIcon),
           ),
         );
-      } else if (snapshot !== null && snapshot.ok === false) {
-        body.push(h('div', { className: 'dbf-block dbf-error' }, t('error.noLedger')));
-      } else {
-        body.push(balanceBlock, peakBlock, priceTable, historyBlock);
-      }
 
-      const card = h(
-        'div',
-        { key: 'card', className: 'dbf-card dbf-surface' + (leaving ? ' dbf-leaving' : ''), style: cardStyle, role: 'dialog', 'aria-label': t('title') },
-        header,
-        h('div', { className: 'dbf-body' }, body),
-        footer,
-      );
-
-      const settingsRow = (key, label, value) =>
-        h(
+        const balanceBlock = h(
           'div',
-          { className: 'dbf-setting' },
+          { className: 'dbf-block' },
+          h('div', { className: 'dbf-balance' }, '¥' + money(snapshot?.balance)),
+          h(
+            'div',
+            { className: 'dbf-sub' },
+            typeof snapshot?.dayStart === 'number'
+              ? t('balance.note', { start: '¥' + money(snapshot.dayStart), used: '¥' + money(snapshot.todayUsed) })
+              : t('balance.noStart', { used: '¥' + money(snapshot?.todayUsed) }),
+          ),
+          h(
+            'div',
+            { className: 'dbf-row', style: { marginTop: '7px' } },
+            h('span', { className: 'dbf-label' }, t('today')),
+            h('span', { className: 'dbf-num' }, '¥' + money(snapshot?.todayUsed)),
+          ),
+          h(
+            'div',
+            { className: 'dbf-sub', style: { marginTop: '1px' } },
+            t('today.calls', { count: snapshot?.todayCalls ?? 0, tokens: tokens(snapshot?.todayTokens ?? 0) }),
+          ),
+          h(
+            'div',
+            { className: 'dbf-sub', style: { marginTop: '1px' } },
+            t('today.split', { peak: '¥' + money(snapshot?.todayPeakCost), valley: '¥' + money(snapshot?.todayValleyCost) }),
+          ),
+          h(
+            'div',
+            { className: 'dbf-row', style: { marginTop: '7px', paddingTop: '7px', borderTop: '.5px solid var(--dsw-alias-border-l1)' } },
+            h('span', { className: 'dbf-label' }, t('turn')),
+            h('span', { className: 'dbf-num' }, '¥' + money(turn?.cost)),
+          ),
+          h(
+            'div',
+            { className: 'dbf-sub', style: { marginTop: '1px' } },
+            turn === null
+              ? t('turn.empty')
+              : t('turn.meta', { time: clock(turn.at), tokens: tokens(turn.tokens) }),
+          ),
+          stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
+        );
+
+        const peakBlock = h(
+          'div',
+          { className: 'dbf-block' },
           h(
             'div',
             { className: 'dbf-row' },
-            h('span', { className: 'dbf-label' }, label),
-            h('span', { className: 'dbf-setting-val' }, value + '%'),
+            h('span', { className: 'dbf-row-title ' + periodClass }, dot, t('peak.now', { label: periodLabel })),
+            h('span', { className: 'dbf-badge ' + periodClass }, periodLabel),
           ),
-          h('input', {
-            type: 'range',
-            className: 'dbf-range',
-            min: 0,
-            max: key === 'bg' ? 90 : 100,
-            step: 5,
-            value,
-            'aria-label': label,
-            onChange: (event) => changeAppearance(key, Number(event.target.value)),
-          }),
-        );
-
-      const settingsPanel = h(
-        'div',
-        { key: 'settings', className: 'dbf-card dbf-surface' + (leaving ? ' dbf-leaving' : ''), style: cardStyle, role: 'dialog', 'aria-label': t('settings') },
-        h('div', { className: 'dbf-head is-static' }, h('span', { className: 'dbf-head-title' }, t('settings'))),
-        h(
-          'div',
-          { className: 'dbf-body' },
-          settingsRow('bg', t('settings.bg'), appearance.bg),
-          settingsRow('border', t('settings.border'), appearance.border),
-          settingsRow('shadow', t('settings.shadow'), appearance.shadow),
           h(
             'div',
-            { className: 'dbf-block', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
-            h('span', { className: 'dbf-sub', style: { marginTop: 0 } }, t('settings.hint')),
+            { className: 'dbf-sub', style: { marginTop: '3px' } },
+            countdown !== ''
+              ? t('peak.next', { label: peakActive ? t('valley') : t('peak.label'), time: countdown })
+              : t('peak.noNext'),
+          ),
+          h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('schedule')),
+        );
+
+        const priceTable = h(
+          'div',
+          { className: 'dbf-block' },
+          h(
+            'div',
+            { className: 'dbf-row-title' },
+            t('prices'),
+            h(
+              'span',
+              { className: 'dbf-sub', style: { marginLeft: '6px', fontWeight: 400 } },
+              '(',
+              h('span', { className: 'dbf-valley' }, t('prices.off')),
+              ' / ',
+              h('span', { className: 'dbf-peak' }, t('prices.peak')),
+              ')',
+            ),
+          ),
+          prices.length === 0
+            ? null
+            : h(
+                'table',
+                { className: 'dbf-table' },
+                h(
+                  'thead',
+                  null,
+                  h(
+                    'tr',
+                    null,
+                    h('th', null, ''),
+                    h('th', null, t('price.hit')),
+                    h('th', null, t('price.miss')),
+                    h('th', null, t('price.out')),
+                  ),
+                ),
+                h(
+                  'tbody',
+                  null,
+                  prices.map((row) =>
+                    h(
+                      'tr',
+                      { key: row.key },
+                      h('td', null, modelLabel(row.model)),
+                      h('td', null, pair(row.hit, peakActive)),
+                      h('td', null, pair(row.miss, peakActive)),
+                      h('td', null, pair(row.out, peakActive)),
+                    ),
+                  ),
+                ),
+              ),
+          models.length > 0
+            ? h(
+                'div',
+                { className: 'dbf-sub', style: { marginTop: '6px' } },
+                models.map((row) => modelLabel(row.model) + ' ¥' + money(row.cost)).join(' · '),
+              )
+            : null,
+        );
+
+        const historyBlock = h(
+          'div',
+          { className: 'dbf-block' },
+          h(
+            'div',
+            { className: 'dbf-row' },
+            h('span', { className: 'dbf-row-title' }, t('history')),
+            h('span', { className: 'dbf-sub' }, t('history.total', { total: '¥' + money(snapshot?.historyTotal) })),
+          ),
+          h(
+            'div',
+            { className: 'dbf-bars' },
+            history.map((row) => {
+              const value = typeof row.cost === 'number' ? row.cost : 0;
+              const ratio = historyMax > 0 ? Math.max(2, Math.round((value / historyMax) * 38)) : 2;
+              const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
+              return h(
+                'div',
+                { key: row.day, className: 'dbf-bar' + (isToday ? ' is-today' : ''), title: row.day + ' ¥' + money(value) },
+                h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
+                h('div', { className: 'dbf-bar-day' }, row.day.slice(5)),
+              );
+            }),
+          ),
+        );
+
+        const footer = h(
+          'div',
+          { className: 'dbf-foot' },
+          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, t('source')),
+          h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
+        );
+
+        const body = [];
+        if (failure !== '' && snapshot === null) {
+          body.push(
             h(
               'div',
-              { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } },
-              h('button', { type: 'button', className: 'dbf-textbtn', onClick: () => setAppearance({ ...DEFAULT_APPEARANCE }) }, t('settings.reset')),
+              { className: 'dbf-block' },
+              h('div', { className: 'dbf-error' }, t('error.fetch') + ': ' + failure),
               h(
                 'button',
-                { type: 'button', className: 'dbf-textbtn', onClick: closeView },
-                t('settings.done'),
+                { type: 'button', className: 'dbf-icon', onClick: () => load(true), style: { width: 'auto', padding: '0 8px', marginTop: '6px' } },
+                t('retry'),
+              ),
+            ),
+          );
+        } else if (snapshot !== null && snapshot.ok === false) {
+          body.push(h('div', { className: 'dbf-block dbf-error' }, t('error.noLedger')));
+        } else {
+          body.push(balanceBlock, peakBlock, priceTable, historyBlock);
+        }
+
+        card = h(
+          'div',
+          { key: 'card', className: 'dbf-card dbf-surface' + (leaving ? ' dbf-leaving' : ''), style: cardStyle, role: 'dialog', 'aria-label': t('title') },
+          header,
+          h('div', { className: 'dbf-body' }, body),
+          footer,
+        );
+
+      }
+
+      let settingsPanel = null;
+      if (settingsOpen || leaving) {
+        const settingsRow = (key, label, value) =>
+          h(
+            'div',
+            { className: 'dbf-setting' },
+            h(
+              'div',
+              { className: 'dbf-row' },
+              h('span', { className: 'dbf-label' }, label),
+              h('span', { className: 'dbf-setting-val' }, value + '%'),
+            ),
+            h('input', {
+              type: 'range',
+              className: 'dbf-range',
+              min: 0,
+              max: key === 'bg' ? 90 : 100,
+              step: 5,
+              value,
+              'aria-label': label,
+              onChange: (event) => changeAppearance(key, Number(event.target.value)),
+            }),
+          );
+
+        settingsPanel = h(
+          'div',
+          { key: 'settings', className: 'dbf-card dbf-surface' + (leaving ? ' dbf-leaving' : ''), style: cardStyle, role: 'dialog', 'aria-label': t('settings') },
+          h('div', { className: 'dbf-head is-static' }, h('span', { className: 'dbf-head-title' }, t('settings'))),
+          h(
+            'div',
+            { className: 'dbf-body' },
+            settingsRow('bg', t('settings.bg'), appearance.bg),
+            settingsRow('border', t('settings.border'), appearance.border),
+            settingsRow('shadow', t('settings.shadow'), appearance.shadow),
+            h(
+              'div',
+              { className: 'dbf-block', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
+              h('span', { className: 'dbf-sub', style: { marginTop: 0 } }, t('settings.hint')),
+              h(
+                'div',
+                { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px' } },
+                h('button', { type: 'button', className: 'dbf-textbtn', onClick: () => setAppearance({ ...DEFAULT_APPEARANCE }) }, t('settings.reset')),
+                h(
+                  'button',
+                  { type: 'button', className: 'dbf-textbtn', onClick: closeView },
+                  t('settings.done'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
+      }
       const bubble =
         !open && !settingsOpen && flash && turn !== null
           ? h(
@@ -944,12 +1004,16 @@ window.__ModuleLoader__.load({
       );
     }
 
+    // Only `t` is consumed from the slot props: skip the re-renders the shell
+    // pushes on every streamed token while a session is running.
+    const MemoBalanceFloat = React.memo(BalanceFloat, (prev, next) => prev.t === next.t);
+
     function apply(ctx) {
       ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'balance-float: dictionaries');
       const t = ctx.locale.bind(NS);
       ctx.slots.inject('shell.overlay', () =>
         ctx.slots.register({ name: 'shell.overlay', id: 'balance-float', order: 60, locale: NS }, (props) =>
-          h(BalanceFloat, { ...props, t }),
+          h(MemoBalanceFloat, { ...props, t }),
         ),
       );
     }
