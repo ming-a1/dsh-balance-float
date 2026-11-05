@@ -19,6 +19,9 @@ window.__ModuleLoader__.load({
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
     const POS_KEY = 'dsh.balance-float.position';
+    // Official top-up page; the balance endpoint has no recharge API, so the
+    // panel only links out to the console.
+    const TOPUP_URL = 'https://platform.deepseek.com/top_up';
     const APPEARANCE_KEY = 'dsh.balance-float.appearance';
     // `bg` is transparency in percent (0 = solid token background), the other
     // two are strength in percent.
@@ -37,6 +40,8 @@ window.__ModuleLoader__.load({
       'pill.balance': '余额',
       'pill.today': '今日',
       balance: '余额',
+      topup: '充值 ↗',
+      'topup.title': '打开 DeepSeek 官方充值页',
       'balance.note': '今日 0 点 {start}，已用 {used}',
       'balance.noStart': '今日已用 {used}',
       today: '今日已用',
@@ -94,6 +99,8 @@ window.__ModuleLoader__.load({
       'pill.balance': 'Balance',
       'pill.today': 'Today',
       balance: 'Balance',
+      topup: 'Top up ↗',
+      'topup.title': 'Open the official DeepSeek top-up page',
       'balance.note': 'Started today at {start}, used {used}',
       'balance.noStart': 'Used today {used}',
       today: 'Used today',
@@ -183,6 +190,9 @@ window.__ModuleLoader__.load({
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
       '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
+      '.dbf-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+      '.dbf-topup{flex:none;padding:2px 9px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;line-height:18px;cursor:pointer}',
+      '.dbf-topup:hover{background:var(--dsw-alias-bg-overlay)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
       '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
       '.dbf-rule{display:flex;align-items:flex-start;gap:6px}',
@@ -781,7 +791,21 @@ window.__ModuleLoader__.load({
         const balanceBlock = h(
           'div',
           { className: 'dbf-block' },
-          h('div', { className: 'dbf-balance' }, '¥' + money(snapshot?.balance)),
+          h(
+            'div',
+            { className: 'dbf-balance-row' },
+            h('div', { className: 'dbf-balance' }, '¥' + money(snapshot?.balance)),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'dbf-topup',
+                title: t('topup.title'),
+                onClick: () => window.open(TOPUP_URL, '_blank', 'noopener,noreferrer'),
+              },
+              t('topup'),
+            ),
+          ),
           h(
             'div',
             { className: 'dbf-sub' },
