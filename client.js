@@ -49,7 +49,10 @@ window.__ModuleLoader__.load({
       peak: '峰谷',
       'peak.label': '峰价',
       valley: '谷价',
-      schedule: '峰：周一至周五 09:00–12:00、14:00–18:00；其余（含周末与法定节假日全天）谷价',
+      'rule.peak': '峰',
+      'rule.valley': '谷',
+      'schedule.peak': '周一至周五 09:00–12:00、14:00–18:00',
+      'schedule.valley': '工作日 12:00–14:00、18:00–次日 09:00，及周末与法定节假日全天',
       'peak.now': '当前按{label}计费',
       'peak.next': '距切到{label} {time}',
       'peak.noNext': '12 天内无切换',
@@ -103,7 +106,10 @@ window.__ModuleLoader__.load({
       peak: 'Pricing',
       'peak.label': 'Peak',
       valley: 'Off-peak',
-      schedule: 'Peak: Mon–Fri 09:00–12:00 and 14:00–18:00; weekends and public holidays are off-peak all day.',
+      'rule.peak': 'Peak',
+      'rule.valley': 'Off-peak',
+      'schedule.peak': 'Mon–Fri 09:00–12:00, 14:00–18:00',
+      'schedule.valley': 'Weekdays 12:00–14:00 and 18:00–09:00 next day, plus weekends and public holidays',
       'peak.now': 'Billed at {label} price now',
       'peak.next': 'Switches to {label} in {time}',
       'peak.noNext': 'No switch within 12 days',
@@ -176,6 +182,10 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-spin{to{transform:rotate(360deg)}}',
       '.dbf-icon:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
       '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto}',
+      '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
+      '.dbf-rule{display:flex;align-items:flex-start;gap:6px}',
+      '.dbf-rule-tag{flex:none;font-weight:600;font-size:11px;line-height:16px;min-width:2.2em}',
+      '.dbf-rule-text{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:16px}',
       '.dbf-block{padding:11px;border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '.dbf-block:last-child{border-bottom:0}',
       '.dbf-balance{font-size:26px;line-height:32px;font-variant-numeric:tabular-nums;font-weight:650;letter-spacing:-.01em}',
@@ -805,7 +815,22 @@ window.__ModuleLoader__.load({
               ? t('peak.next', { label: peakActive ? t('valley') : t('peak.label'), time: countdown })
               : t('peak.noNext'),
           ),
-          h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('schedule')),
+          h(
+            'div',
+            { className: 'dbf-rules' },
+            h(
+              'div',
+              { className: 'dbf-rule' },
+              h('span', { className: 'dbf-rule-tag dbf-peak' }, t('rule.peak')),
+              h('span', { className: 'dbf-rule-text' }, t('schedule.peak')),
+            ),
+            h(
+              'div',
+              { className: 'dbf-rule' },
+              h('span', { className: 'dbf-rule-tag dbf-valley' }, t('rule.valley')),
+              h('span', { className: 'dbf-rule-text' }, t('schedule.valley')),
+            ),
+          ),
         );
 
         const priceTable = h(
