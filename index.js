@@ -223,9 +223,14 @@ export function apply(ctx, config) {
   // self-reload (rebuilt(id) is a no-op for an unknown id).
   try {
     const modules = ctx.get('modules')
-    const entries = modules?.graph?.()?.entries ?? []
-    const ids = entries.map((entry) => entry?.id).filter((id) => String(id).includes('float'))
-    noteReload(`graph=[${ids.join(',')}]`)
+    const graph = modules?.graph?.()
+    const entries = graph?.entries
+    const rows = Array.isArray(entries) ? entries : entries instanceof Map ? [...entries.values()] : []
+    const ids = rows.map((entry) => entry?.id ?? entry?.packageName).filter(Boolean)
+    const clientPath = typeof modules?.clientPath === 'function' ? modules.clientPath('dsh-balance-float') : undefined
+    noteReload(
+      `graph keys=${graph === undefined ? 'none' : Object.keys(graph).join('|')} rows=${ids.length} float=[${ids.filter((id) => String(id).includes('float')).join(',')}] clientPath=${String(clientPath)}`,
+    )
   } catch (error) {
     noteReload(`graph error ${error instanceof Error ? error.message : String(error)}`)
   }
