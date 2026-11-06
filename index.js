@@ -131,6 +131,24 @@ function numeric(value) {
  */
 export function apply(ctx, config) {
   const paths = resolvePaths(config)
+  const loaded = loadState(config)
+  const refreshSeconds = Number.isFinite(config?.refreshSeconds) ? Math.max(5, Math.floor(config.refreshSeconds)) : 20
+  const apiKeyRef =
+    typeof config?.apiKeyRef === 'string' && config.apiKeyRef.trim() !== '' ? config.apiKeyRef.trim() : 'DEEPSEEK_API_KEY'
+
+  let pollTimer = null
+  let polling = false
+
+  const tracker = createTracker({
+    state: loaded.state,
+    storePath: paths.store,
+    logger: ctx.logger,
+    onTurn: () => schedulePoll(1500),
+  })
+
+  // Materialize the ledger right away: on a first run this persists the seed
+  // copied from the legacy ledger, so the widget starts from known values.
+  saveState(paths.store, tracker.state)
   const seededAt = Date.now()
 
   /** Read the configured credential and refresh the balance. */
