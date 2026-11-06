@@ -722,12 +722,16 @@ window.__ModuleLoader__.load({
         }
       }, []);
 
-      // Check quietly when the card opens so the hover text already knows.
+      // Check quietly when the card opens so the hover text already knows, and
+      // re-check whenever the local version changed since the last answer.
       useEffect(() => {
         if (!open) return;
-        if (updateCheckedAt.current !== 0 && Date.now() - updateCheckedAt.current < 5 * 60 * 1000) return;
+        if (update !== null && update.phase === 'checking') return;
+        const version = snapshot?.version ?? '';
+        const answered = update !== null && update.phase !== 'checking' && (update.current || '') === version;
+        if (answered && Date.now() - updateCheckedAt.current < 5 * 60 * 1000) return;
         void checkUpdate(false);
-      }, [open, checkUpdate]);
+      }, [open, update, snapshot?.version, checkUpdate]);
 
       const load = useCallback(async (manual) => {
         if (manual) setBusy(true);

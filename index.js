@@ -59,12 +59,16 @@ function isNewer(a, b) {
 
 /** Cached check against the published package.json on the default branch. */
 const UPDATE_TTL_MS = 5 * 60 * 1000
-let updateCache = { at: 0, value: null }
+// Only the *published* version is cached; `current` is re-read every call so a
+// locally bumped version never reports the value cached minutes ago.
+let updateCache = { at: 0, latest: null }
 
 async function checkUpdate() {
   const now = Date.now()
-  if (updateCache.value !== null && now - updateCache.at < UPDATE_TTL_MS) return updateCache.value
   const current = packageVersion()
+  if (updateCache.latest !== null && now - updateCache.at < UPDATE_TTL_MS) {
+    return { ok: true, current, latest: updateCache.latest, hasUpdate: isNewer(updateCache.latest, current) }
+  }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10000)
   try {
@@ -80,9 +84,8 @@ async function checkUpdate() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const pkg = JSON.parse(await response.text())
     const latest = typeof pkg?.version === 'string' ? pkg.version : ''
-    const value = { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
-    updateCache = { at: now, value }
-    return value
+    if (latest !== '') updateCache = { at: now, latest }
+    return { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
   } catch (error) {
     // Do not cache failures: the next click retries.
     return { ok: false, current, latest: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) }
