@@ -649,7 +649,8 @@ window.__ModuleLoader__.load({
         } catch {
           // Even if the request dies with the old fiber the row is being replaced.
         }
-        window.setTimeout(() => window.location.reload(), 900);
+        // Give the host time to disable+re-enable the row (client bundle included).
+        window.setTimeout(() => window.location.reload(), 2600);
       }, [job]);
 
       // An update that finished while the dialog was hidden (HMR remount) still

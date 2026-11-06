@@ -499,18 +499,20 @@ export function apply(ctx, config) {
                   rebuiltRev = `error:${error instanceof Error ? error.message : String(error)}`
                 }
                 noteReload(`rebuilt=${rebuiltRev}`)
-                // The manager's reload goes through hmr.reconcileProfile, which
-                // also rebuilds the *client* graph. A bare dispose+init of this
-                // fiber kept the host alive but dropped the client entry, so the
-                // pill vanished after the page reload.
+                // A bare dispose+init keeps the host alive but drops the client
+                // bundle entry, and reconcileProfile alone does not restart a row
+                // whose profile patch did not change. The only path that rebuilds
+                // both halves is the one the plugin manager UI uses: persist the
+                // row as disabled, then enabled again.
                 const manager = ctx.get('pluginManager')
-                if (typeof manager?.reload === 'function') {
-                  // HMR refuses to reconcile outside its own transaction.
-                  const hmr = ctx.get('hmr')
-                  const reconcile = () => manager.reload([])
-                  const outcome =
-                    typeof hmr?.runExclusive === 'function' ? await hmr.runExclusive(reconcile) : await reconcile()
-                  noteReload(`manager-reload restart=${outcome?.restartReason ?? 'none'} warnings=${(outcome?.warnings ?? []).length}`)
+                if (typeof manager?.setPluginEnabled === 'function') {
+                  const id = 'include:balance-float'
+                  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+                  noteReload('toggle off')
+                  await manager.setPluginEnabled(id, false)
+                  await sleep(400)
+                  noteReload('toggle on')
+                  await manager.setPluginEnabled(id, true)
                 } else {
                   await entry.fiber?.dispose?.()
                   try {
