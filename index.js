@@ -222,7 +222,7 @@ export function apply(ctx, config) {
   // Which client-graph id does this bundle get? Needed to republish it after a
   // self-reload (rebuilt(id) is a no-op for an unknown id).
   try {
-    const modules = ctx.get('modules')
+    const modules = ctx.get('clientModules')
     const graph = modules?.graph?.()
     const entries = graph?.entries
     const rows = Array.isArray(entries) ? entries : entries instanceof Map ? [...entries.values()] : []
@@ -485,7 +485,7 @@ export function apply(ctx, config) {
                 // the old rev (the pill silently disappears after the update).
                 let rebuiltRev = 'none'
                 try {
-                  const modules = ctx.get('modules')
+                  const modules = ctx.get('clientModules')
                   if (typeof modules?.rebuilt === 'function') {
                     for (const id of ['dsh-balance-float', 'balance-float', 'include:balance-float']) {
                       const rev = modules.rebuilt(id)
