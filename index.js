@@ -435,8 +435,16 @@ export function apply(ctx, config) {
               try {
                 const loader = ctx.get('loader')
                 const entries = loader === undefined || typeof loader.entries !== 'function' ? [] : [...loader.entries()]
-                const entry = entries.find((row) => row.id === ENTRY_ID)
+                const ids = entries.map((row) => row.id ?? row.options?.id ?? '?')
+                noteReload(`entries=${ids.length} ids=${ids.join(',')}`)
+                const entry = entries.find(
+                  (row) =>
+                    (row.id ?? row.options?.id) === ENTRY_ID ||
+                    row.options?.id === ENTRY_ID ||
+                    row.options?.name === 'dsh-balance-float',
+                )
                 if (entry === undefined) {
+                  noteReload('row not found')
                   ctx.logger?.warn?.('balance-float: reload requested but the row was not found')
                   return
                 }
