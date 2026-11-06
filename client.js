@@ -28,6 +28,8 @@ window.__ModuleLoader__.load({
 
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
+    const ROUTE_UPDATE = '/balance-float/update';
+    const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
     // panel only links out to the console.
@@ -271,6 +273,12 @@ window.__ModuleLoader__.load({
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
+      '.dbf-version{border:0;background:transparent;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}',
+      '.dbf-version:hover{color:var(--dsw-alias-label-primary)}',
+      '.dbf-modal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.32)}',
+      '.dbf-modal-card{width:280px;padding:14px 14px 10px;border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,calc(.3 * var(--dbf-shadow,1)))}',
+      '.dbf-modal-title{font-size:13px;font-weight:600;margin-bottom:6px}',
+      '.dbf-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}',
       '.dbf-fold-head{cursor:pointer;user-select:none}',
       '.dbf-fold-arrow{display:inline-block;width:10px;margin-right:3px;color:var(--dsw-alias-label-tertiary);font-size:9px}',
       '.dbf-fold-head:hover .dbf-row-title{color:var(--dsw-alias-label-primary)}',
@@ -540,6 +548,8 @@ window.__ModuleLoader__.load({
       const [selectedDay, setSelectedDay] = useState(null);
       // Token buckets are collapsed until asked for.
       const [tokensOpen, setTokensOpen] = useState(false);
+      // Update check: null | {phase, latest, current, hasUpdate, error}
+      const [update, setUpdate] = useState(null);
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -660,6 +670,30 @@ window.__ModuleLoader__.load({
           setOpen(false);
           setSettingsOpen(false);
         }, 200);
+      }, []);
+
+      /** Ask the Host whether a newer published version exists. */
+      const checkUpdate = useCallback(async () => {
+        setUpdate({ phase: 'checking', latest: '', current: '', hasUpdate: false, error: '' });
+        try {
+          const response = await fetch(ROUTE_UPDATE, { headers: { accept: 'application/json' }, cache: 'no-store' });
+          const body = await response.json();
+          if (!aliveRef.current) return;
+          if (!response.ok || body?.ok === false) {
+            setUpdate({ phase: 'error', latest: '', current: body?.current ?? '', hasUpdate: false, error: body?.error ?? 'HTTP ' + response.status });
+            return;
+          }
+          setUpdate({
+            phase: 'done',
+            latest: typeof body.latest === 'string' ? body.latest : '',
+            current: typeof body.current === 'string' ? body.current : '',
+            hasUpdate: body.hasUpdate === true,
+            error: '',
+          });
+        } catch (error) {
+          if (!aliveRef.current) return;
+          setUpdate({ phase: 'error', latest: '', current: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) });
+        }
       }, []);
 
       const load = useCallback(async (manual) => {
@@ -1336,7 +1370,16 @@ window.__ModuleLoader__.load({
         const footer = h(
           'div',
           { className: 'dbf-foot' },
-          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, t('version') + ' v' + (snapshot?.version || '—')),
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dbf-version',
+              title: t('update.check'),
+              onClick: () => void checkUpdate(),
+            },
+            t('version') + ' v' + (snapshot?.version || '—'),
+          ),
           h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
         );
 
@@ -1484,6 +1527,59 @@ window.__ModuleLoader__.load({
             )
           : null;
 
+      const updateModal =
+        update === null
+          ? null
+          : h(
+              'div',
+              {
+                className: 'dbf-modal',
+                role: 'dialog',
+                'aria-modal': 'true',
+                'aria-label': t('update.title'),
+                onClick: (event) => {
+                  if (event.target === event.currentTarget) setUpdate(null);
+                },
+              },
+              h(
+                'div',
+                { className: 'dbf-modal-card dbf-surface' },
+                h('div', { className: 'dbf-modal-title' }, t('update.title')),
+                update.phase === 'checking'
+                  ? h('div', { className: 'dbf-sub' }, t('update.checking'))
+                  : update.phase === 'error'
+                    ? h('div', { className: 'dbf-error' }, t('update.failed') + ': ' + update.error)
+                    : update.hasUpdate
+                      ? h(
+                          'div',
+                          { className: 'dbf-sub' },
+                          t('update.found', { latest: update.latest, current: update.current }),
+                        )
+                      : h('div', { className: 'dbf-sub' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
+                h(
+                  'div',
+                  { className: 'dbf-modal-actions' },
+                  update.phase === 'done' && update.hasUpdate
+                    ? h(
+                        'a',
+                        {
+                          className: 'dbf-textbtn',
+                          href: REPO_URL + '/compare/v' + update.current + '...v' + update.latest,
+                          target: '_blank',
+                          rel: 'noreferrer',
+                        },
+                        t('update.open'),
+                      )
+                    : null,
+                  h(
+                    'button',
+                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdate(null) },
+                    update.phase === 'done' && update.hasUpdate ? t('update.later') : t('settings.done'),
+                  ),
+                ),
+              ),
+            );
+
       const surface = settingsOpen ? settingsPanel : open ? card : pill;
 
       const tree = h(
@@ -1492,6 +1588,7 @@ window.__ModuleLoader__.load({
         h('style', { key: 'css' }, STYLE),
         surface,
         bubble,
+        updateModal,
       );
       return createPortal !== null && typeof document !== 'undefined' ? createPortal(tree, document.body) : tree;
     }

@@ -41,12 +41,58 @@ function packageVersion() {
   }
 }
 
+/**
+ * Compare two dotted versions: true when `a` is newer than `b`.
+ * Non-numeric parts are ignored so a pre-release tag never beats a release.
+ */
+function isNewer(a, b) {
+  const parse = (value) => String(value).replace(/^v/i, '').split('.').map((part) => Number.parseInt(part, 10) || 0)
+  const left = parse(a)
+  const right = parse(b)
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const x = left[i] ?? 0
+    const y = right[i] ?? 0
+    if (x !== y) return x > y
+  }
+  return false
+}
+
+/** Cached check against the published package.json on the default branch. */
+const UPDATE_TTL_MS = 5 * 60 * 1000
+let updateCache = { at: 0, value: null }
+
+async function checkUpdate() {
+  const now = Date.now()
+  if (updateCache.value !== null && now - updateCache.at < UPDATE_TTL_MS) return updateCache.value
+  const current = packageVersion()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 8000)
+  try {
+    const response = await fetch('https://raw.githubusercontent.com/ming-a1/dsh-balance-float/main/package.json', {
+      signal: controller.signal,
+      headers: { accept: 'application/json' },
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const pkg = await response.json()
+    const latest = typeof pkg?.version === 'string' ? pkg.version : ''
+    const value = { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
+    updateCache = { at: now, value }
+    return value
+  } catch (error) {
+    // Do not cache failures: the next click retries.
+    return { ok: false, current, latest: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const name = 'balance-float'
 
 /** Services this plugin cannot work without (`credentials` is read optionally). */
 export const inject = ['webServer', 'timer']
 
 const ROUTE = '/balance-float/snapshot'
+const ROUTE_UPDATE = '/balance-float/update'
 const BALANCE_URL = 'https://api.deepseek.com/user/balance'
 const BALANCE_TIMEOUT_MS = 8000
 
@@ -194,6 +240,32 @@ export function apply(ctx, config) {
         },
       }),
     'balance-float: snapshot route',
+  )
+
+  ctx.effect(
+    () =>
+      ctx.webServer.register({
+        kind: 'exact',
+        path: ROUTE_UPDATE,
+        handler: async (req, res) => {
+          if (req.method !== 'GET' && req.method !== 'HEAD') {
+            respondJson(res, 405, { ok: false, error: 'method not allowed' })
+            return
+          }
+          const rejection = ctx.get('connection')?.requestRejection?.({ headers: req.headers })
+          if (rejection !== undefined) {
+            respondJson(res, rejection === 401 ? 401 : 403, { ok: false, error: 'forbidden' })
+            return
+          }
+          try {
+            respondJson(res, 200, await checkUpdate())
+          } catch (error) {
+            ctx.logger?.warn?.(`balance-float: update check failed: ${error instanceof Error ? error.message : String(error)}`)
+            respondJson(res, 500, { ok: false, error: 'update check failed' })
+          }
+        },
+      }),
+    'balance-float: update route',
   )
 
   // First reading right after activation; the interval below covers the rest.
