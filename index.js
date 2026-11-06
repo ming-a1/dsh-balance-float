@@ -505,7 +505,11 @@ export function apply(ctx, config) {
                 // pill vanished after the page reload.
                 const manager = ctx.get('pluginManager')
                 if (typeof manager?.reload === 'function') {
-                  const outcome = await manager.reload([])
+                  // HMR refuses to reconcile outside its own transaction.
+                  const hmr = ctx.get('hmr')
+                  const reconcile = () => manager.reload([])
+                  const outcome =
+                    typeof hmr?.runExclusive === 'function' ? await hmr.runExclusive(reconcile) : await reconcile()
                   noteReload(`manager-reload restart=${outcome?.restartReason ?? 'none'} warnings=${(outcome?.warnings ?? []).length}`)
                 } else {
                   await entry.fiber?.dispose?.()
