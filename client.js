@@ -116,6 +116,7 @@ window.__ModuleLoader__.load({
       'update.latest': '已是最新版本 v{current}',
       'update.open': '查看更新',
       'update.later': '稍后',
+      'update.retry': '点击重试',
       source: '本地账本',
       updated: '更新于 {time}',
       refresh: '刷新',
@@ -206,6 +207,7 @@ window.__ModuleLoader__.load({
       'update.latest': 'You are on the latest version v{current}',
       'update.open': 'View update',
       'update.later': 'Later',
+      'update.retry': 'click to retry',
       source: 'Local ledger',
       updated: 'Updated {time}',
       refresh: 'Refresh',
@@ -292,6 +294,8 @@ window.__ModuleLoader__.load({
       '.dbf-version{display:inline-flex;align-items:center;gap:4px;margin-left:-5px;padding:1px 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:16px;cursor:pointer;transition:background-color .15s ease,color .15s ease}',
       '.dbf-version:hover{background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));color:var(--dsw-alias-label-primary)}',
       '.dbf-version-glyph{font-size:10px;opacity:.75}',
+      '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
+      '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
       '.dbf-modal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.32)}',
       '.dbf-modal-card{width:280px;padding:14px 14px 10px;border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,calc(.3 * var(--dbf-shadow,1)))}',
       '.dbf-modal-title{font-size:13px;font-weight:600;margin-bottom:6px}',
@@ -568,6 +572,8 @@ window.__ModuleLoader__.load({
       const [tokensOpen, setTokensOpen] = useState(false);
       // Update check: null | {phase, latest, current, hasUpdate, error}
       const [update, setUpdate] = useState(null);
+      const [updateOpen, setUpdateOpen] = useState(false);
+      const updateCheckedAt = useRef(0);
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -691,8 +697,10 @@ window.__ModuleLoader__.load({
       }, []);
 
       /** Ask the Host whether a newer published version exists. */
-      const checkUpdate = useCallback(async () => {
+      const checkUpdate = useCallback(async (showModal) => {
+        if (showModal) setUpdateOpen(true);
         setUpdate({ phase: 'checking', latest: '', current: '', hasUpdate: false, error: '' });
+        updateCheckedAt.current = Date.now();
         try {
           const response = await fetch(ROUTE_UPDATE, { headers: { accept: 'application/json' }, cache: 'no-store' });
           const body = await response.json();
@@ -713,6 +721,13 @@ window.__ModuleLoader__.load({
           setUpdate({ phase: 'error', latest: '', current: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) });
         }
       }, []);
+
+      // Check quietly when the card opens so the hover text already knows.
+      useEffect(() => {
+        if (!open) return;
+        if (updateCheckedAt.current !== 0 && Date.now() - updateCheckedAt.current < 5 * 60 * 1000) return;
+        void checkUpdate(false);
+      }, [open, checkUpdate]);
 
       const load = useCallback(async (manual) => {
         if (manual) setBusy(true);
@@ -980,6 +995,18 @@ window.__ModuleLoader__.load({
       };
 
       const dot = h('span', { className: 'dbf-dot ' + (peakActive ? 'is-peak' : 'is-valley'), 'aria-hidden': true });
+
+      // The version control's hover text reports the last check's outcome.
+      const updateTitle =
+        update === null
+          ? t('update.check')
+          : update.phase === 'checking'
+            ? t('update.checking')
+          : update.phase === 'error'
+            ? t('update.failed') + ' · ' + t('update.retry')
+            : update.hasUpdate
+              ? t('update.found', { latest: update.latest, current: update.current }) + ' · ' + t('update.open')
+              : t('update.latest', { current: update.current || snapshot?.version || '—' });
 
       // Docked to a side edge: a square ball that only shows the balance.
       const docked = appearance.dockBall && dock !== '';
@@ -1392,9 +1419,9 @@ window.__ModuleLoader__.load({
             'button',
             {
               type: 'button',
-              className: 'dbf-version',
-              title: t('update.check'),
-              onClick: () => void checkUpdate(),
+              className: 'dbf-version' + (update !== null && update.phase === 'done' && update.hasUpdate ? ' has-update' : ''),
+              title: updateTitle,
+              onClick: () => void checkUpdate(true),
             },
             t('version') + ' v' + (snapshot?.version || '—'),
             h('span', { className: 'dbf-version-glyph', 'aria-hidden': true }, '↻'),
@@ -1547,7 +1574,7 @@ window.__ModuleLoader__.load({
           : null;
 
       const updateModal =
-        update === null
+        update === null || !updateOpen
           ? null
           : h(
               'div',
@@ -1557,7 +1584,7 @@ window.__ModuleLoader__.load({
                 'aria-modal': 'true',
                 'aria-label': t('update.title'),
                 onClick: (event) => {
-                  if (event.target === event.currentTarget) setUpdate(null);
+                  if (event.target === event.currentTarget) setUpdateOpen(false);
                 },
               },
               h(
@@ -1592,7 +1619,7 @@ window.__ModuleLoader__.load({
                     : null,
                   h(
                     'button',
-                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdate(null) },
+                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
                     update.phase === 'done' && update.hasUpdate ? t('update.later') : t('settings.done'),
                   ),
                 ),
