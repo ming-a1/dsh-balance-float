@@ -105,6 +105,7 @@ window.__ModuleLoader__.load({
       'price.out': '输出',
       history: '近 7 天',
       'history.total': '合计 {total}',
+      version: '版本',
       source: '本地账本',
       updated: '更新于 {time}',
       refresh: '刷新',
@@ -186,6 +187,7 @@ window.__ModuleLoader__.load({
       'price.out': 'Out',
       history: 'Last 7 days',
       'history.total': 'Total {total}',
+      version: 'Version',
       source: 'Local ledger',
       updated: 'Updated {time}',
       refresh: 'Refresh',
@@ -1334,7 +1336,7 @@ window.__ModuleLoader__.load({
         const footer = h(
           'div',
           { className: 'dbf-foot' },
-          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, 'v' + (snapshot?.version || '—')),
+          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, t('version') + ' v' + (snapshot?.version || '—')),
           h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
         );
 
