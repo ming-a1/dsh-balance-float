@@ -652,6 +652,16 @@ window.__ModuleLoader__.load({
         window.setTimeout(() => window.location.reload(), 900);
       }, [job]);
 
+      // An update that finished while the dialog was hidden (HMR remount) still
+      // has to complete: reload the plugin row and the page automatically.
+      useEffect(() => {
+        if (job === null || job.phase !== 'done') return;
+        const key = String(job.version || '') + '@' + String(job.at || '');
+        if (shared.reloadFired === key) return;
+        shared.reloadFired = key;
+        void reloadPlugin();
+      }, [job, reloadPlugin]);
+
       // A remount during an in-place update must resume the progress polling.
       useEffect(() => {
         if (job === null) return;
