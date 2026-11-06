@@ -11,7 +11,7 @@ Host 半边自己维护本地用量账本（按轮记账 + 余额轮询），浏
 @lls-a1/dsh-balance-float
 ```
 
-在 DSH 的插件管理里**只输入包名**即可安装和更新（安装源可选国内镜像）。注意：本机 Host 进程的 `GIT_CONFIG_*` 环境变量已损坏，`github:` 形式的安装会失败；用上面的 npm 包名即可。GitHub 仓库仅作为源码地址：https://github.com/ming-a1/dsh-balance-float
+在 DSH 的插件管理里**只输入包名**即可安装和更新（安装源可选国内镜像）。注意两点：① 本机 Host 进程的 `GIT_CONFIG_*` 环境变量已损坏，`github:` 形式的安装会失败，请用上面的 npm 包名；② 由 `pluginManager` 管理的 profile 里若存在其它 `link:` 依赖，安装前请先完成 pnpm 解析，否则 `npm install` 会因 `link:` 协议报 EUNSUPPORTEDPROTOCOL。GitHub 仓库仅作为源码地址：https://github.com/ming-a1/dsh-balance-float
 本地开发可以用 `link:/path/to/balance-float`，改完刷新页面即可生效。
 
 启用后 profile 里会多出一行 `id: balance-float`，可在 `config` 里覆盖账本路径、轮询间隔和 `apiKeyRef`（默认 `DEEPSEEK_API_KEY`，取不到时余额相关数字保持不动，不会归零）。
