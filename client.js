@@ -35,7 +35,9 @@ window.__ModuleLoader__.load({
     const APPEARANCE_KEY = 'dsh.balance-float.appearance';
     // `bg` is transparency in percent (0 = solid token background), the other
     // two are strength in percent.
-    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 14 };
+    // 16 is the pill's half height: the default keeps the capsule look while the
+    // card gets a matching 16px corner.
+    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 16 };
     // A 4s cadence keeps the balance and today's spend close to the ledger; the
     // route only reads a cached local file, so this stays cheap.
     const POLL_MS = 4000;
@@ -177,7 +179,7 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-fade{from{opacity:0}to{opacity:1}}',
       '.dbf-card.dbf-leaving,.dbf-pill.dbf-leaving{animation:dbf-collapse-down .18s cubic-bezier(.4,0,.7,.6) forwards !important;pointer-events:none;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card.dbf-leaving,.dbf-dir-up .dbf-pill.dbf-leaving{animation-name:dbf-collapse-up !important}',
-      '.dbf-pill{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:999px;background:transparent;box-shadow:0 6px 22px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));font-size:12px;line-height:20px;white-space:nowrap;cursor:grab;user-select:none;touch-action:none;animation:dbf-fade .16s ease-out both}',
+      '.dbf-pill{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:calc(var(--dbf-radius,16) * 1px);background:transparent;box-shadow:0 6px 22px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));font-size:12px;line-height:20px;white-space:nowrap;cursor:grab;user-select:none;touch-action:none;animation:dbf-fade .16s ease-out both}',
       '.dbf-dir-up .dbf-pill{animation-name:dbf-fade}',
       '.dbf-pill:active{cursor:grabbing}',
       '.dbf-pill-sep{width:.5px;height:12px;background:var(--dsw-alias-border-l2)}',
@@ -188,7 +190,7 @@ window.__ModuleLoader__.load({
       '.dbf-dot.is-peak{background:var(--dsw-alias-state-error-primary)}',
       '.dbf-dot.is-valley{background:var(--dsw-alias-state-success-primary)}',
       '.dbf-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}',
-      '.dbf-card{width:316px;border-radius:calc(var(--dbf-radius,14) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
+      '.dbf-card{width:316px;border-radius:calc(var(--dbf-radius,16) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card{animation-name:dbf-open-up}',
       '.dbf-head{display:flex;align-items:center;gap:8px;padding:9px 11px;background:transparent;border-bottom:.5px solid var(--dsw-alias-border-l1);cursor:grab;user-select:none;touch-action:none}',
       '.dbf-head.is-static{cursor:default}',
