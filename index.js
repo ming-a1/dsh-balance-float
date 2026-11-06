@@ -66,14 +66,19 @@ async function checkUpdate() {
   if (updateCache.value !== null && now - updateCache.at < UPDATE_TTL_MS) return updateCache.value
   const current = packageVersion()
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 8000)
+  const timer = setTimeout(() => controller.abort(), 10000)
   try {
-    const response = await fetch('https://raw.githubusercontent.com/ming-a1/dsh-balance-float/main/package.json', {
-      signal: controller.signal,
-      headers: { accept: 'application/json' },
-    })
+    // api.github.com is reachable on hosts where raw.githubusercontent.com is
+    // not (and it needs no token for a public repo).
+    const response = await fetch(
+      'https://api.github.com/repos/ming-a1/dsh-balance-float/contents/package.json?ref=main',
+      {
+        signal: controller.signal,
+        headers: { accept: 'application/vnd.github.raw', 'user-agent': 'dsh-balance-float' },
+      },
+    )
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const pkg = await response.json()
+    const pkg = JSON.parse(await response.text())
     const latest = typeof pkg?.version === 'string' ? pkg.version : ''
     const value = { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
     updateCache = { at: now, value }
