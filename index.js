@@ -96,6 +96,11 @@ async function checkUpdate({ fresh = false } = {}) {
   }
 }
 
+export const name = 'balance-float'
+
+/** Services this plugin cannot work without (`credentials` is read optionally). */
+export const inject = ['webServer', 'timer']
+
 const ROUTE = '/balance-float/snapshot'
 const ROUTE_UPDATE = '/balance-float/update'
 const BALANCE_URL = 'https://api.deepseek.com/user/balance'
