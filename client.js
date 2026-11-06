@@ -72,6 +72,13 @@ window.__ModuleLoader__.load({
       'peak.label': '峰价',
       valley: '谷价',
       'schedule.title': '峰谷计费时段',
+      'tokens.title': 'Token 用量',
+      'tokens.input': '未缓存输入',
+      'tokens.cache': '缓存读取',
+      'tokens.output': '输出',
+      'tokens.total': '合计',
+      'tokens.hit': '缓存命中 {rate}',
+      'tokens.empty': '分项从本版本开始记录，历史事件只有合计',
       'day.back': '← 返回',
       'day.title': '当日明细',
       'day.calls': '{count} 次调用 · {tokens} tokens',
@@ -146,6 +153,13 @@ window.__ModuleLoader__.load({
       'peak.label': 'Peak',
       valley: 'Off-peak',
       'schedule.title': 'Peak and off-peak windows',
+      'tokens.title': 'Token usage',
+      'tokens.input': 'Uncached input',
+      'tokens.cache': 'Cache read',
+      'tokens.output': 'Output',
+      'tokens.total': 'Total',
+      'tokens.hit': '{rate} cached',
+      'tokens.empty': 'Buckets are recorded from this version on; older events only carry the total',
       'day.back': '← Back',
       'day.title': 'Day detail',
       'day.calls': '{count} calls · {tokens} tokens',
@@ -255,6 +269,7 @@ window.__ModuleLoader__.load({
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
+      '.dbf-token-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:1px 0}',
       '.dbf-models{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
       '.dbf-model-row{display:flex;align-items:baseline;gap:8px}',
       '.dbf-model-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}',
@@ -1036,6 +1051,35 @@ window.__ModuleLoader__.load({
           stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
         );
 
+        const inputTokens = typeof snapshot?.todayInput === 'number' ? snapshot.todayInput : 0;
+        const cacheTokens = typeof snapshot?.todayCacheRead === 'number' ? snapshot.todayCacheRead : 0;
+        const outputTokens = typeof snapshot?.todayOutput === 'number' ? snapshot.todayOutput : 0;
+        const tokenSum = inputTokens + cacheTokens + outputTokens;
+        const promptSum = inputTokens + cacheTokens;
+        const hitRate = promptSum > 0 ? Math.round((cacheTokens / promptSum) * 100) : null;
+        const tokenLine = (label, value) =>
+          h(
+            'div',
+            { className: 'dbf-token-row' },
+            h('span', { className: 'dbf-sub' }, label),
+            h('span', { className: 'dbf-num' }, value),
+          );
+        const tokenBlock = h(
+          'div',
+          { className: 'dbf-block' },
+          h(
+            'div',
+            { className: 'dbf-row' },
+            h('span', { className: 'dbf-row-title' }, t('tokens.title')),
+            hitRate === null ? null : h('span', { className: 'dbf-sub' }, t('tokens.hit', { rate: hitRate + '%' })),
+          ),
+          tokenLine(t('tokens.input'), tokens(inputTokens)),
+          tokenLine(t('tokens.cache'), tokens(cacheTokens)),
+          tokenLine(t('tokens.output'), tokens(outputTokens)),
+          tokenLine(t('tokens.total'), tokens(tokenSum)),
+          tokenSum > 0 ? null : h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('tokens.empty')),
+        );
+
         const peakBlock = h(
           'div',
           { className: 'dbf-block' },
@@ -1221,6 +1265,14 @@ window.__ModuleLoader__.load({
                       t('today.split', { peak: '¥' + money(selected.peakCost), valley: '¥' + money(selected.valleyCost) }),
                     )
                   : null,
+                h(
+                  'div',
+                  { className: 'dbf-token-row', style: { marginTop: '6px', borderTop: '0.5px solid var(--dsw-alias-border-l1)', paddingTop: '5px' } },
+                  h('span', { className: 'dbf-sub' }, t('tokens.input')),
+                  h('span', { className: 'dbf-num' }, tokens(selected.input ?? 0)),
+                ),
+                h('div', { className: 'dbf-token-row' }, h('span', { className: 'dbf-sub' }, t('tokens.cache')), h('span', { className: 'dbf-num' }, tokens(selected.cacheRead ?? 0))),
+                h('div', { className: 'dbf-token-row' }, h('span', { className: 'dbf-sub' }, t('tokens.output')), h('span', { className: 'dbf-num' }, tokens(selected.output ?? 0))),
                 (selected.models ?? []).length === 0
                   ? h('div', { className: 'dbf-sub', style: { marginTop: '6px' } }, t('day.empty'))
                   : h(
@@ -1264,7 +1316,7 @@ window.__ModuleLoader__.load({
         } else if (dayBlock !== null) {
           body.push(dayBlock);
         } else {
-          body.push(balanceBlock, peakBlock, priceTable, historyBlock);
+          body.push(balanceBlock, tokenBlock, peakBlock, priceTable, historyBlock);
         }
 
         card = h(

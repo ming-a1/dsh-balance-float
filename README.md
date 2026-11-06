@@ -31,7 +31,8 @@ github:ming-a1/dsh-balance-float
 
 ## 记账与余额
 
-- **逐轮记账**：监听 `session/event`，把 `assistant/message` 的 `usage` 按（会话, 轮次）聚合，`turn/end` 时按官方单价折成费用，每个模型追加一条事件。子代理轮次同样计入。
+- **逐轮记账**：监听 `session/event`，把 `assistant/message` 的 `usage` 按（会话, 轮次）聚合，`turn/end` 时按官方单价折成费用，每个模型追加一条事件（含 `input` / `cacheRead` / `output` 三个 token 分项）。子代理轮次同样计入。
+- **Token 分项**：卡片里有「Token 用量」块，展示未缓存输入 / 缓存读取 / 输出 / 合计与缓存命中率；按日明细里同样给出这三项（本版本之前写入的事件只有合计，会显示为 0 并附提示）。
 - **余额**：每 `refreshSeconds`（默认 20 秒）用 `credentials.resolve(apiKeyRef)` 取官方 API Key，请求 `https://api.deepseek.com/user/balance`，写回 `lastBalance`。密钥不出 Host 进程，也不写日志。
 - **今日已用**：`dayStart - lastBalance`（能覆盖本机其它客户端的花费），同时不低过本地事件合计；跨零点时把昨日合计归档进 `history`，并用当前余额作为新一天基线。检测到充值（余额变大）时重设基线而不是报负数。
 - 拿不到 Key 或接口失败时只保留已有数字，不会把余额写成 0。
