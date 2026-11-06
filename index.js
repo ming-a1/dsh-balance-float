@@ -15,9 +15,20 @@
  * browser-facing endpoint. No credential value ever leaves the Host process and
  * nothing is logged about it.
  */
+import { readFileSync } from 'node:fs'
 import { loadState, resolvePaths, saveState } from './lib/ledger.js'
 import { buildSnapshot } from './lib/snapshot.js'
 import { createTracker } from './lib/tracker.js'
+
+/** This package's own version, shown in the widget footer. */
+const VERSION = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+    return typeof pkg.version === 'string' ? pkg.version : ''
+  } catch {
+    return ''
+  }
+})()
 
 export const name = 'balance-float'
 
@@ -162,6 +173,7 @@ export function apply(ctx, config) {
               sourcePath: paths.store,
               mtimeMs: tracker.lastSavedAt > 0 ? tracker.lastSavedAt : seededAt,
               serverNow: Date.now(),
+              version: VERSION,
             })
             respondJson(res, 200, snapshot)
           } catch (error) {

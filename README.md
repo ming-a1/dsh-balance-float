@@ -17,7 +17,7 @@ Host 半边自己维护本地用量账本（按轮记账 + 余额轮询），浏
 github:ming-a1/dsh-balance-float
 ```
 
-在 DSH 的插件管理里粘贴上面的 spec 即可；要固定版本用 `github:ming-a1/dsh-balance-float#v1.0.0`。
+在 DSH 的插件管理里粘贴上面的 spec 即可，总是拉默认分支的最新版本（不建议固定 tag，否则后续修复拿不到）。
 本地开发可以用 `link:/path/to/balance-float`，改完刷新页面即可生效。
 
 启用后 profile 里会多出一行 `id: balance-float`，可在 `config` 里覆盖账本路径、轮询间隔和 `apiKeyRef`（默认 `DEEPSEEK_API_KEY`，取不到时余额相关数字保持不动，不会归零）。

@@ -1334,7 +1334,7 @@ window.__ModuleLoader__.load({
         const footer = h(
           'div',
           { className: 'dbf-foot' },
-          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, t('source')),
+          h('span', { className: 'dbf-foot-path', title: snapshot?.source?.path ?? '' }, 'v' + (snapshot?.version || '—')),
           h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
         );
 
