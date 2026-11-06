@@ -71,6 +71,7 @@ window.__ModuleLoader__.load({
       peak: '峰谷',
       'peak.label': '峰价',
       valley: '谷价',
+      'schedule.title': '峰谷计费时段',
       'rule.peak': '峰',
       'rule.valley': '谷',
       'schedule.peak': '周一至周五 09:00–12:00、14:00–18:00',
@@ -133,6 +134,7 @@ window.__ModuleLoader__.load({
       peak: 'Pricing',
       'peak.label': 'Peak',
       valley: 'Off-peak',
+      'schedule.title': 'Peak and off-peak windows',
       'rule.peak': 'Peak',
       'rule.valley': 'Off-peak',
       'schedule.peak': 'Mon–Fri 09:00–12:00, 14:00–18:00',
@@ -231,6 +233,9 @@ window.__ModuleLoader__.load({
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
+      '.dbf-help{flex:none;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;padding:0;border-radius:50%;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:transparent;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:1;font-weight:600;cursor:pointer}',
+      '.dbf-help:hover,.dbf-help.is-open{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
+      '.dbf-hint{margin-top:6px;padding:7px 9px;border-radius:8px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));display:flex;flex-direction:column;gap:3px}',
       '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
       '.dbf-rule{display:flex;align-items:flex-start;gap:6px}',
       '.dbf-rule-tag{flex:none;font-weight:600;font-size:11px;line-height:16px;min-width:2.2em}',
@@ -483,6 +488,8 @@ window.__ModuleLoader__.load({
       const [flash, setFlash] = useState(false);
       // The bubble sits under the pill; near the bottom edge it flips above.
       const [bubbleUp, setBubbleUp] = useState(false);
+      // «?» next to the current billing period: reveals the peak/valley windows.
+      const [hintOpen, setHintOpen] = useState(false);
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -594,6 +601,7 @@ window.__ModuleLoader__.load({
       const closeView = useCallback(() => {
         if (leaveTimerRef.current !== null) return;
         setLeaving(true);
+        setHintOpen(false);
         leaveTimerRef.current = window.setTimeout(() => {
           leaveTimerRef.current = null;
           setLeaving(false);
@@ -1005,7 +1013,24 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'dbf-row' },
-            h('span', { className: 'dbf-row-title ' + periodClass }, dot, t('peak.now', { label: periodLabel })),
+            h(
+              'span',
+              { className: 'dbf-row-title ' + periodClass },
+              dot,
+              t('peak.now', { label: periodLabel }),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dbf-help' + (hintOpen ? ' is-open' : ''),
+                  title: t('schedule.title'),
+                  'aria-label': t('schedule.title'),
+                  'aria-expanded': hintOpen ? 'true' : 'false',
+                  onClick: () => setHintOpen((value) => !value),
+                },
+                '?',
+              ),
+            ),
             h('span', { className: 'dbf-badge ' + periodClass }, periodLabel),
           ),
           h(
@@ -1015,22 +1040,24 @@ window.__ModuleLoader__.load({
               ? t('peak.next', { label: peakActive ? t('valley') : t('peak.label'), time: countdown })
               : t('peak.noNext'),
           ),
-          h(
-            'div',
-            { className: 'dbf-rules' },
-            h(
-              'div',
-              { className: 'dbf-rule' },
-              h('span', { className: 'dbf-rule-tag dbf-peak' }, t('rule.peak')),
-              h('span', { className: 'dbf-rule-text' }, t('schedule.peak')),
-            ),
-            h(
-              'div',
-              { className: 'dbf-rule' },
-              h('span', { className: 'dbf-rule-tag dbf-valley' }, t('rule.valley')),
-              h('span', { className: 'dbf-rule-text' }, t('schedule.valley')),
-            ),
-          ),
+          hintOpen
+            ? h(
+                'div',
+                { className: 'dbf-hint', role: 'note' },
+                h(
+                  'div',
+                  { className: 'dbf-rule' },
+                  h('span', { className: 'dbf-rule-tag dbf-peak' }, t('rule.peak')),
+                  h('span', { className: 'dbf-rule-text' }, t('schedule.peak')),
+                ),
+                h(
+                  'div',
+                  { className: 'dbf-rule' },
+                  h('span', { className: 'dbf-rule-tag dbf-valley' }, t('rule.valley')),
+                  h('span', { className: 'dbf-rule-text' }, t('schedule.valley')),
+                ),
+              )
+            : null,
         );
 
         const priceTable = h(
