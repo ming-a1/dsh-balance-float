@@ -219,6 +219,16 @@ export function apply(ctx, config) {
     }
   }
   noteReload(`module v${packageVersion()}`)
+  // Which client-graph id does this bundle get? Needed to republish it after a
+  // self-reload (rebuilt(id) is a no-op for an unknown id).
+  try {
+    const modules = ctx.get('modules')
+    const entries = modules?.graph?.()?.entries ?? []
+    const ids = entries.map((entry) => entry?.id).filter((id) => String(id).includes('float'))
+    noteReload(`graph=[${ids.join(',')}]`)
+  } catch (error) {
+    noteReload(`graph error ${error instanceof Error ? error.message : String(error)}`)
+  }
   const loaded = loadState(config)
   const refreshSeconds = Number.isFinite(config?.refreshSeconds) ? Math.max(5, Math.floor(config.refreshSeconds)) : 20
   const apiKeyRef =
@@ -471,7 +481,15 @@ export function apply(ctx, config) {
                 let rebuiltRev = 'none'
                 try {
                   const modules = ctx.get('modules')
-                  if (typeof modules?.rebuilt === 'function') rebuiltRev = modules.rebuilt('dsh-balance-float') ?? 'none'
+                  if (typeof modules?.rebuilt === 'function') {
+                    for (const id of ['dsh-balance-float', 'balance-float', 'include:balance-float']) {
+                      const rev = modules.rebuilt(id)
+                      if (rev !== undefined) {
+                        rebuiltRev = `${id}:${rev}`
+                        break
+                      }
+                    }
+                  }
                 } catch (error) {
                   rebuiltRev = `error:${error instanceof Error ? error.message : String(error)}`
                 }
