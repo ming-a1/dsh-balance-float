@@ -31,6 +31,7 @@ window.__ModuleLoader__.load({
     const ROUTE_UPDATE = '/balance-float/update';
     const ROUTE_UPDATE_RUN = '/balance-float/update/run';
     const ROUTE_UPDATE_STATUS = '/balance-float/update/status';
+    const ROUTE_RELOAD = '/balance-float/reload';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -125,6 +126,9 @@ window.__ModuleLoader__.load({
       'update.done': '已更新到 v{version}',
       'update.restart': '刷新页面加载新的界面；Host 侧（记账/路由）要重启 dsh web 才会生效。',
       'update.reload': '刷新页面',
+      'update.reloadOnly': '仅刷新页面',
+      'update.reloadPlugin': '重载插件并刷新',
+      'update.reloading': '正在重载插件…',
       'update.keepOpen': '更新期间请保持此页面打开',
       'update.later': '稍后',
       'update.retry': '点击重试',
@@ -226,6 +230,9 @@ window.__ModuleLoader__.load({
       'update.done': 'Updated to v{version}',
       'update.restart': 'Reload the page for the new UI; restart dsh web so the host half picks it up.',
       'update.reload': 'Reload',
+      'update.reloadOnly': 'Reload page only',
+      'update.reloadPlugin': 'Reload plugin',
+      'update.reloading': 'Reloading the plugin…',
       'update.keepOpen': 'Keep this page open while updating',
       'update.later': 'Later',
       'update.retry': 'click to retry',
@@ -633,6 +640,17 @@ window.__ModuleLoader__.load({
           }
         }, 400);
       }, []);
+
+      /** Ask the Host to re-initialise this plugin row, then reload the page. */
+      const reloadPlugin = useCallback(async () => {
+        setJob({ ...(job ?? {}), phase: 'reload', percent: 100 });
+        try {
+          await fetch(ROUTE_RELOAD, { method: 'POST', headers: { accept: 'application/json' } });
+        } catch {
+          // Even if the request dies with the old fiber the row is being replaced.
+        }
+        window.setTimeout(() => window.location.reload(), 900);
+      }, [job]);
 
       const startUpdate = useCallback(async () => {
         if (job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply')) return;
@@ -1705,7 +1723,9 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'dbf-modal-icon', 'aria-hidden': true }, '⟳'),
                   h('span', { className: 'dbf-modal-title' }, t('update.title')),
                 ),
-                jobActive
+                job !== null && job.phase === 'reload'
+                  ? h('div', { className: 'dbf-modal-body' }, t('update.reloading'))
+                  : jobActive
                   ? h(
                       'div',
                       null,
@@ -1728,8 +1748,13 @@ window.__ModuleLoader__.load({
                           { className: 'dbf-modal-actions' },
                           h(
                             'button',
-                            { type: 'button', className: 'dbf-btn-primary', onClick: () => window.location.reload() },
-                            t('update.reload'),
+                            { type: 'button', className: 'dbf-textbtn', onClick: () => window.location.reload() },
+                            t('update.reloadOnly'),
+                          ),
+                          h(
+                            'button',
+                            { type: 'button', className: 'dbf-btn-primary', onClick: () => void reloadPlugin() },
+                            t('update.reloadPlugin'),
                           ),
                         ),
                       )

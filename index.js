@@ -178,6 +178,8 @@ const ROUTE = '/balance-float/snapshot'
 const ROUTE_UPDATE = '/balance-float/update'
 const ROUTE_UPDATE_RUN = '/balance-float/update/run'
 const ROUTE_UPDATE_STATUS = '/balance-float/update/status'
+const ROUTE_RELOAD = '/balance-float/reload'
+const ENTRY_ID = 'balance-float'
 const TARBALL_URL = 'https://codeload.github.com/ming-a1/dsh-balance-float/tar.gz/refs/heads/main'
 const PACKAGE_DIR = path.dirname(fileURLToPath(import.meta.url))
 const BALANCE_URL = 'https://api.deepseek.com/user/balance'
@@ -398,6 +400,46 @@ export function apply(ctx, config) {
         },
       }),
     'balance-float: update run route',
+  )
+
+  ctx.effect(
+    () =>
+      ctx.webServer.register({
+        kind: 'exact',
+        path: ROUTE_RELOAD,
+        handler: (req, res) => {
+          if (req.method !== 'POST') {
+            respondJson(res, 405, { ok: false, error: 'method not allowed' })
+            return
+          }
+          const rejection = ctx.get('connection')?.requestRejection?.({ headers: req.headers })
+          if (rejection !== undefined) {
+            respondJson(res, rejection === 401 ? 401 : 403, { ok: false, error: 'forbidden' })
+            return
+          }
+          // Answer first, then dispose/re-init this very row: the response must
+          // be flushed before the fiber that owns this handler goes away.
+          respondJson(res, 202, { ok: true })
+          setTimeout(() => {
+            void (async () => {
+              try {
+                const loader = ctx.get('loader')
+                const entries = loader === undefined || typeof loader.entries !== 'function' ? [] : [...loader.entries()]
+                const entry = entries.find((row) => row.id === ENTRY_ID)
+                if (entry === undefined) {
+                  ctx.logger?.warn?.('balance-float: reload requested but the row was not found')
+                  return
+                }
+                await entry.fiber?.dispose?.()
+                await entry.refresh?.()
+              } catch (error) {
+                ctx.logger?.warn?.(`balance-float: self reload failed: ${error instanceof Error ? error.message : String(error)}`)
+              }
+            })()
+          }, 400)
+        },
+      }),
+    'balance-float: reload route',
   )
 
   // First reading right after activation; the interval below covers the rest.
