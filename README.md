@@ -5,13 +5,13 @@ Host 半边自己维护本地用量账本（按轮记账 + 余额轮询），浏
 
 ## 安装
 
-插件以 DSH profile bundle 的方式挂载（Host + Client 两半，无构建步骤）：
+插件以 DSH profile bundle 的方式挂载（Host + Client 两半，无构建步骤），已发布到 npm：
 
 ```text
-github:ming-a1/dsh-balance-float
+@lls-a1/dsh-balance-float
 ```
 
-在 DSH 的插件管理里粘贴上面的 spec 即可，总是拉默认分支的最新版本（不建议固定 tag，否则后续修复拿不到）。
+在 DSH 的插件管理里**只输入包名**即可安装和更新（安装源可选国内镜像）。GitHub 仓库仅作为源码地址：https://github.com/ming-a1/dsh-balance-float
 本地开发可以用 `link:/path/to/balance-float`，改完刷新页面即可生效。
 
 启用后 profile 里会多出一行 `id: balance-float`，可在 `config` 里覆盖账本路径、轮询间隔和 `apiKeyRef`（默认 `DEEPSEEK_API_KEY`，取不到时余额相关数字保持不动，不会归零）。

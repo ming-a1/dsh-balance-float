@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
-    const REPO_TARBALL = 'https://codeload.github.com/ming-a1/dsh-balance-float/tar.gz/refs/tags/v';
+    const NPM_SPEC = '@lls-a1/dsh-balance-float';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -120,7 +120,7 @@ window.__ModuleLoader__.load({
       'update.now': '更新',
       'update.copy': '复制安装链接',
       'update.copied': '已复制 ✓',
-      'update.installHint': '复制后到插件管理器里粘贴安装（tarball 地址，不会调用 git）。',
+      'update.installHint': '复制后到插件管理器里粘贴安装（npm 包名，安装源可选用国内镜像）。',
       'update.later': '稍后',
       'update.retry': '点击重试',
       source: '本地账本',
@@ -216,7 +216,7 @@ window.__ModuleLoader__.load({
       'update.now': 'Update',
       'update.copy': 'Copy install spec',
       'update.copied': 'Copied ✓',
-      'update.installHint': 'Paste this tarball URL into the plugin manager to upgrade (no git involved).',
+      'update.installHint': 'Paste this npm package name into the plugin manager to upgrade.',
       'update.later': 'Later',
       'update.retry': 'click to retry',
       source: 'Local ledger',
@@ -601,9 +601,7 @@ window.__ModuleLoader__.load({
 
       /** Copy the install spec so the user can update from the plugin manager. */
       const copyInstallSpec = useCallback(async () => {
-        // Tarball spec: `github:` installs run `git ls-remote`, which fails in
-        // Host processes whose GIT_CONFIG_* env is malformed.
-        const spec = update !== null && update.latest !== '' ? REPO_TARBALL + update.latest : REPO_URL;
+        const spec = NPM_SPEC;
         try {
           await navigator.clipboard.writeText(spec);
         } catch {
