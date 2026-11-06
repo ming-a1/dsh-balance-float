@@ -449,15 +449,22 @@ export function apply(ctx, config) {
                   return
                 }
                 // Node caches ES modules by URL: drop our entries so refresh()
-                // re-evaluates the files the updater just wrote.
-                let busted = 0
+                // re-evaluates the files the updater just wrote. The cache is a
+                // Map subclass whose own methods are patched, so go through
+                // Map.prototype exactly like the HMR service does.
+                const hmr = ctx.get('hmr')
+                const urls = typeof hmr?.esmUrls === 'function' ? hmr.esmUrls() : []
                 const cache = loader?.internal?.loadCache
-                if (cache instanceof Map) {
-                  for (const url of [...cache.keys()]) {
-                    if (typeof url === 'string' && url.includes('/balance-float/') && cache.delete(url)) busted += 1
+                let busted = 0
+                if (cache !== undefined && cache !== null) {
+                  for (const url of urls) {
+                    if (typeof url !== 'string' || !url.includes('/balance-float/')) continue
+                    Map.prototype.delete.call(cache, url)
+                    busted += 1
                   }
                 }
-                noteReload(`bust=${busted}`)
+                const sample = urls.filter((url) => typeof url === 'string' && url.includes('balance-float')).slice(0, 2).join(' ')
+                noteReload(`bust=${busted}/${urls.length} ${sample}`)
                 await entry.fiber?.dispose?.()
                 await entry.refresh?.()
                 noteReload('done')
