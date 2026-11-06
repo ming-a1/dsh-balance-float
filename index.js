@@ -210,6 +210,15 @@ function numeric(value) {
  */
 export function apply(ctx, config) {
   const paths = resolvePaths(config)
+  const reloadLog = path.join(path.dirname(paths.store), 'reload.log')
+  const noteReload = (line) => {
+    try {
+      appendFileSync(reloadLog, `${new Date().toISOString()} ${line}\n`)
+    } catch {
+      // diagnostics only
+    }
+  }
+  noteReload(`module v${packageVersion()}`)
   const loaded = loadState(config)
   const refreshSeconds = Number.isFinite(config?.refreshSeconds) ? Math.max(5, Math.floor(config.refreshSeconds)) : 20
   const apiKeyRef =
@@ -420,17 +429,7 @@ export function apply(ctx, config) {
           // Answer first, then dispose/re-init this very row: the response must
           // be flushed before the fiber that owns this handler goes away.
           respondJson(res, 202, { ok: true })
-          // A small breadcrumb next to the ledger tells us whether the row
-          // really came back after a self-reload.
-          const logPath = path.join(path.dirname(paths.store), 'reload.log')
-          const note = (line) => {
-            try {
-              appendFileSync(logPath, `${new Date().toISOString()} ${line}\n`)
-            } catch {
-              // diagnostics only
-            }
-          }
-          note(`start host=${BOOT_VERSION} disk=${packageVersion()}`)
+          noteReload(`start host=${BOOT_VERSION} disk=${packageVersion()}`)
           setTimeout(() => {
             void (async () => {
               try {
@@ -441,11 +440,21 @@ export function apply(ctx, config) {
                   ctx.logger?.warn?.('balance-float: reload requested but the row was not found')
                   return
                 }
+                // Node caches ES modules by URL: drop our entries so refresh()
+                // re-evaluates the files the updater just wrote.
+                let busted = 0
+                const cache = loader?.internal?.loadCache
+                if (cache instanceof Map) {
+                  for (const url of [...cache.keys()]) {
+                    if (typeof url === 'string' && url.includes('/balance-float/') && cache.delete(url)) busted += 1
+                  }
+                }
+                noteReload(`bust=${busted}`)
                 await entry.fiber?.dispose?.()
                 await entry.refresh?.()
-                note('done')
+                noteReload('done')
               } catch (error) {
-                note(`failed ${error instanceof Error ? error.message : String(error)}`)
+                noteReload(`failed ${error instanceof Error ? error.message : String(error)}`)
                 ctx.logger?.warn?.(`balance-float: self reload failed: ${error instanceof Error ? error.message : String(error)}`)
               }
             })()
