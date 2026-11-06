@@ -29,6 +29,8 @@ window.__ModuleLoader__.load({
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
+    const ROUTE_UPDATE_RUN = '/balance-float/update/run';
+    const ROUTE_UPDATE_STATUS = '/balance-float/update/status';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -114,7 +116,14 @@ window.__ModuleLoader__.load({
       'update.failed': '检查失败',
       'update.found': '发现新版本 v{latest}（当前 v{current}）',
       'update.latest': '已是最新版本 v{current}',
-      'update.open': '查看更新',
+      'update.now': '更新',
+      'update.downloading': '正在下载',
+      'update.unpacking': '正在解包',
+      'update.applying': '正在写入文件',
+      'update.done': '已更新到 v{version}',
+      'update.restart': '刷新页面加载新的界面；Host 侧（记账/路由）要重启 dsh web 才会生效。',
+      'update.reload': '刷新页面',
+      'update.keepOpen': '更新期间请保持此页面打开',
       'update.later': '稍后',
       'update.retry': '点击重试',
       source: '本地账本',
@@ -205,7 +214,14 @@ window.__ModuleLoader__.load({
       'update.failed': 'Update check failed',
       'update.found': 'v{latest} is available (you have v{current})',
       'update.latest': 'You are on the latest version v{current}',
-      'update.open': 'View update',
+      'update.now': 'Update',
+      'update.downloading': 'Downloading',
+      'update.unpacking': 'Unpacking',
+      'update.applying': 'Applying files',
+      'update.done': 'Updated to v{version}',
+      'update.restart': 'Reload the page for the new UI; restart dsh web so the host half picks it up.',
+      'update.reload': 'Reload',
+      'update.keepOpen': 'Keep this page open while updating',
       'update.later': 'Later',
       'update.retry': 'click to retry',
       source: 'Local ledger',
@@ -296,9 +312,23 @@ window.__ModuleLoader__.load({
       '.dbf-version-glyph{font-size:10px;opacity:.75}',
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
-      '.dbf-modal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.32)}',
-      '.dbf-modal-card{width:280px;padding:14px 14px 10px;border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,calc(.3 * var(--dbf-shadow,1)))}',
-      '.dbf-modal-title{font-size:13px;font-weight:600;margin-bottom:6px}',
+      '.dbf-modal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.36);backdrop-filter:blur(1px)}',
+      '.dbf-modal-card{width:308px;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)))}',
+      '.dbf-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
+      '.dbf-modal-icon{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));color:var(--dsw-alias-brand-primary,#4d6bfe);font-size:12px;line-height:1}',
+      '.dbf-modal-title{font-size:13px;font-weight:600}',
+      '.dbf-modal-body{font-size:12px;line-height:18px}',
+      '.dbf-modal-note{margin-top:6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}',
+      '.dbf-modal-versions{display:flex;align-items:center;gap:8px;margin-top:8px}',
+      '.dbf-modal-version{display:flex;flex-direction:column;gap:1px;padding:4px 8px;border-radius:8px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay))}',
+      '.dbf-modal-version.is-new{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4d6bfe) 14%,transparent)}',
+      '.dbf-modal-version-label{font-size:10px;line-height:13px;color:var(--dsw-alias-label-tertiary)}',
+      '.dbf-modal-version-value{font-size:12px;line-height:17px;font-weight:600;font-variant-numeric:tabular-nums}',
+      '.dbf-modal-arrow{color:var(--dsw-alias-label-tertiary)}',
+      '.dbf-progress{height:6px;border-radius:3px;margin:10px 0 4px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));overflow:hidden}',
+      '.dbf-progress-fill{height:100%;border-radius:3px;background:var(--dsw-alias-brand-primary,#4d6bfe);transition:width .2s ease}',
+      '.dbf-btn-primary{padding:4px 12px;border:0;border-radius:8px;background:var(--dsw-alias-brand-primary,#4d6bfe);color:#fff;font:inherit;font-size:12px;font-weight:600;line-height:18px;cursor:pointer}',
+      '.dbf-btn-primary:hover{filter:brightness(1.06)}',
       '.dbf-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}',
       '.dbf-fold-head{cursor:pointer;user-select:none}',
       '.dbf-fold-arrow{display:inline-block;width:10px;margin-right:3px;color:var(--dsw-alias-label-tertiary);font-size:9px}',
@@ -574,6 +604,54 @@ window.__ModuleLoader__.load({
       const [update, setUpdate] = useState(null);
       const [updateOpen, setUpdateOpen] = useState(false);
       const updateCheckedAt = useRef(0);
+      // In-place update job reported by the Host.
+      const [job, setJob] = useState(null);
+      const jobTimer = useRef(null);
+
+      const pollJob = useCallback(() => {
+        if (jobTimer.current !== null) return;
+        jobTimer.current = window.setInterval(async () => {
+          try {
+            const response = await fetch(ROUTE_UPDATE_STATUS, { headers: { accept: 'application/json' }, cache: 'no-store' });
+            const body = await response.json();
+            if (!aliveRef.current) return;
+            if (response.ok && body?.job) {
+              setJob(body.job);
+              if (body.job.phase === 'done' || body.job.phase === 'error') {
+                window.clearInterval(jobTimer.current);
+                jobTimer.current = null;
+              }
+            }
+          } catch {
+            // Keep polling: the Host is busy writing files.
+          }
+        }, 400);
+      }, []);
+
+      const startUpdate = useCallback(async () => {
+        if (job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply')) return;
+        setJob({ phase: 'download', percent: 0 });
+        try {
+          const response = await fetch(ROUTE_UPDATE_RUN, { method: 'POST', headers: { accept: 'application/json' } });
+          const body = await response.json();
+          if (!aliveRef.current) return;
+          if (!response.ok || body?.ok === false) throw new Error(body?.error ?? 'HTTP ' + response.status);
+          if (body?.job) setJob(body.job);
+          pollJob();
+        } catch (error) {
+          if (aliveRef.current) setJob({ phase: 'error', percent: 0, message: error instanceof Error ? error.message : String(error) });
+        }
+      }, [job, pollJob]);
+
+      useEffect(
+        () => () => {
+          if (jobTimer.current !== null) {
+            window.clearInterval(jobTimer.current);
+            jobTimer.current = null;
+          }
+        },
+        [],
+      );
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -1009,7 +1087,7 @@ window.__ModuleLoader__.load({
           : update.phase === 'error'
             ? t('update.failed') + ' · ' + t('update.retry')
             : update.hasUpdate
-              ? t('update.found', { latest: update.latest, current: update.current }) + ' · ' + t('update.open')
+              ? t('update.found', { latest: update.latest, current: update.current }) + ' · ' + t('update.now')
               : t('update.latest', { current: update.current || snapshot?.version || '—' });
 
       // Docked to a side edge: a square ball that only shows the balance.
@@ -1577,6 +1655,17 @@ window.__ModuleLoader__.load({
             )
           : null;
 
+      const jobActive = job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply');
+      const phaseLabel =
+        job === null
+          ? ''
+          : job.phase === 'download'
+            ? t('update.downloading')
+            : job.phase === 'unpack'
+              ? t('update.unpacking')
+              : job.phase === 'apply'
+                ? t('update.applying')
+                : '';
       const updateModal =
         update === null || !updateOpen
           ? null
@@ -1588,45 +1677,127 @@ window.__ModuleLoader__.load({
                 'aria-modal': 'true',
                 'aria-label': t('update.title'),
                 onClick: (event) => {
-                  if (event.target === event.currentTarget) setUpdateOpen(false);
+                  if (event.target === event.currentTarget && !jobActive) setUpdateOpen(false);
                 },
               },
               h(
                 'div',
                 { className: 'dbf-modal-card dbf-surface' },
-                h('div', { className: 'dbf-modal-title' }, t('update.title')),
-                update.phase === 'checking'
-                  ? h('div', { className: 'dbf-sub' }, t('update.checking'))
-                  : update.phase === 'error'
-                    ? h('div', { className: 'dbf-error' }, t('update.failed') + ': ' + update.error)
-                    : update.hasUpdate
-                      ? h(
-                          'div',
-                          { className: 'dbf-sub' },
-                          t('update.found', { latest: update.latest, current: update.current }),
-                        )
-                      : h('div', { className: 'dbf-sub' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
                 h(
                   'div',
-                  { className: 'dbf-modal-actions' },
-                  update.phase === 'done' && update.hasUpdate
-                    ? h(
-                        'a',
-                        {
-                          className: 'dbf-textbtn',
-                          href: REPO_URL + '/compare/v' + update.current + '...v' + update.latest,
-                          target: '_blank',
-                          rel: 'noreferrer',
-                        },
-                        t('update.open'),
-                      )
-                    : null,
-                  h(
-                    'button',
-                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
-                    update.phase === 'done' && update.hasUpdate ? t('update.later') : t('settings.done'),
-                  ),
+                  { className: 'dbf-modal-head' },
+                  h('span', { className: 'dbf-modal-icon', 'aria-hidden': true }, '⟳'),
+                  h('span', { className: 'dbf-modal-title' }, t('update.title')),
                 ),
+                jobActive
+                  ? h(
+                      'div',
+                      null,
+                      h('div', { className: 'dbf-modal-body' }, phaseLabel + ' ' + Math.round(job.percent || 0) + '%'),
+                      h(
+                        'div',
+                        { className: 'dbf-progress' },
+                        h('div', { className: 'dbf-progress-fill', style: { width: Math.max(3, job.percent || 0) + '%' } }),
+                      ),
+                      h('div', { className: 'dbf-modal-note' }, t('update.keepOpen')),
+                    )
+                  : job !== null && job.phase === 'done'
+                    ? h(
+                        'div',
+                        null,
+                        h('div', { className: 'dbf-modal-body' }, t('update.done', { version: job.version || update.latest || '—' })),
+                        h('div', { className: 'dbf-modal-note' }, t('update.restart')),
+                        h(
+                          'div',
+                          { className: 'dbf-modal-actions' },
+                          h(
+                            'button',
+                            { type: 'button', className: 'dbf-btn-primary', onClick: () => window.location.reload() },
+                            t('update.reload'),
+                          ),
+                        ),
+                      )
+                    : job !== null && job.phase === 'error'
+                      ? h(
+                          'div',
+                          null,
+                          h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + (job.message || '')),
+                          h(
+                            'div',
+                            { className: 'dbf-modal-actions' },
+                            h(
+                              'button',
+                              { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
+                              t('settings.done'),
+                            ),
+                            h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void startUpdate() }, t('update.retry')),
+                          ),
+                        )
+                      : update.phase === 'checking'
+                        ? h('div', { className: 'dbf-modal-body' }, t('update.checking'))
+                        : update.phase === 'error'
+                          ? h(
+                              'div',
+                              null,
+                              h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + update.error),
+                              h(
+                                'div',
+                                { className: 'dbf-modal-actions' },
+                                h(
+                                  'button',
+                                  { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
+                                  t('settings.done'),
+                                ),
+                                h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void checkUpdate(true) }, t('update.retry')),
+                              ),
+                            )
+                          : update.hasUpdate
+                            ? h(
+                                'div',
+                                null,
+                                h('div', { className: 'dbf-modal-body' }, t('update.found', { latest: update.latest, current: update.current })),
+                                h(
+                                  'div',
+                                  { className: 'dbf-modal-versions' },
+                                  h(
+                                    'span',
+                                    { className: 'dbf-modal-version' },
+                                    h('span', { className: 'dbf-modal-version-label' }, t('update.current')),
+                                    h('span', { className: 'dbf-modal-version-value' }, 'v' + (update.current || '—')),
+                                  ),
+                                  h('span', { className: 'dbf-modal-arrow', 'aria-hidden': true }, '→'),
+                                  h(
+                                    'span',
+                                    { className: 'dbf-modal-version is-new' },
+                                    h('span', { className: 'dbf-modal-version-label' }, t('update.latest')),
+                                    h('span', { className: 'dbf-modal-version-value' }, 'v' + update.latest),
+                                  ),
+                                ),
+                                h(
+                                  'div',
+                                  { className: 'dbf-modal-actions' },
+                                  h(
+                                    'button',
+                                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
+                                    t('update.later'),
+                                  ),
+                                  h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void startUpdate() }, t('update.now')),
+                                ),
+                              )
+                            : h(
+                                'div',
+                                null,
+                                h('div', { className: 'dbf-modal-body' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
+                                h(
+                                  'div',
+                                  { className: 'dbf-modal-actions' },
+                                  h(
+                                    'button',
+                                    { type: 'button', className: 'dbf-btn-primary', onClick: () => setUpdateOpen(false) },
+                                    t('settings.done'),
+                                  ),
+                                ),
+                              ),
               ),
             );
 
