@@ -318,8 +318,9 @@ window.__ModuleLoader__.load({
       '.dbf-bar-fill{width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--dsw-alias-border-l2)}',
       '.dbf-bar.is-today .dbf-bar-fill{background:var(--dsw-alias-brand-primary)}',
       '.dbf-bar-day{color:var(--dsw-alias-label-secondary);font-size:9.5px;line-height:12px;font-variant-numeric:tabular-nums}',
-      '.dbf-foot{display:flex;align-items:center;gap:6px;padding:7px 11px;background:transparent;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:14px}',
+      '.dbf-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 11px;background:transparent;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:14px}',
       '.dbf-foot-path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.dbf-foot-time{margin-left:auto;white-space:nowrap}',
       '.dbf-bubble{position:absolute;top:calc(100% + 8px);left:4px;display:flex;align-items:baseline;gap:6px;padding:5px 12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,calc(.18 * var(--dbf-shadow,1)));font-size:13px;line-height:19px;white-space:nowrap;pointer-events:none;animation:dbf-flash 3s ease forwards}',
       '.dbf-bubble-label{color:var(--dsw-alias-label-secondary)}',
       '.dbf-bubble-amount{font-weight:600;font-variant-numeric:tabular-nums}',
@@ -1382,7 +1383,7 @@ window.__ModuleLoader__.load({
             t('version') + ' v' + (snapshot?.version || '—'),
             h('span', { className: 'dbf-version-glyph', 'aria-hidden': true }, '↻'),
           ),
-          h('span', null, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
+          h('span', { className: 'dbf-foot-time' }, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
         );
 
         const body = [];
