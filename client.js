@@ -29,9 +29,7 @@ window.__ModuleLoader__.load({
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
-    const ROUTE_UPDATE_RUN = '/balance-float/update/run';
-    const ROUTE_UPDATE_STATUS = '/balance-float/update/status';
-    const ROUTE_RELOAD = '/balance-float/reload';
+    const INSTALL_SPEC = 'github:ming-a1/dsh-balance-float';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -120,16 +118,9 @@ window.__ModuleLoader__.load({
       'update.label.current': '当前',
       'update.label.latest': '最新',
       'update.now': '更新',
-      'update.downloading': '正在下载',
-      'update.unpacking': '正在解包',
-      'update.applying': '正在写入文件',
-      'update.done': '已更新到 v{version}',
-      'update.restart': '刷新页面加载新的界面；Host 侧（记账/路由）要重启 dsh web 才会生效。',
-      'update.reload': '刷新页面',
-      'update.reloadOnly': '仅刷新页面',
-      'update.reloadPlugin': '重载插件并刷新',
-      'update.reloading': '正在重载插件…',
-      'update.keepOpen': '更新期间请保持此页面打开',
+      'update.copy': '复制安装链接',
+      'update.copied': '已复制 ✓',
+      'update.installHint': '在插件管理里用该 spec 重新安装即可升级。',
       'update.later': '稍后',
       'update.retry': '点击重试',
       source: '本地账本',
@@ -141,7 +132,6 @@ window.__ModuleLoader__.load({
       expand: '展开',
       'error.noLedger': '未找到本地用量账本',
       'error.fetch': '读取失败',
-      'error.hostStale': 'Host 代码 v{host} ≠ 磁盘 v{file}，重启 dsh web 后生效',
       'error.stale': '账本不是今天的数据',
       settings: '外观设置',
       'settings.open': '外观设置',
@@ -224,16 +214,9 @@ window.__ModuleLoader__.load({
       'update.label.current': 'Current',
       'update.label.latest': 'Latest',
       'update.now': 'Update',
-      'update.downloading': 'Downloading',
-      'update.unpacking': 'Unpacking',
-      'update.applying': 'Applying files',
-      'update.done': 'Updated to v{version}',
-      'update.restart': 'Reload the page for the new UI; restart dsh web so the host half picks it up.',
-      'update.reload': 'Reload',
-      'update.reloadOnly': 'Reload page only',
-      'update.reloadPlugin': 'Reload plugin',
-      'update.reloading': 'Reloading the plugin…',
-      'update.keepOpen': 'Keep this page open while updating',
+      'update.copy': 'Copy install spec',
+      'update.copied': 'Copied ✓',
+      'update.installHint': 'Reinstall from the plugin manager with this spec to upgrade.',
       'update.later': 'Later',
       'update.retry': 'click to retry',
       source: 'Local ledger',
@@ -245,7 +228,6 @@ window.__ModuleLoader__.load({
       expand: 'Expand',
       'error.noLedger': 'No local usage ledger found',
       'error.fetch': 'Could not load the snapshot',
-      'error.hostStale': 'Host code v{host} ≠ files v{file} — restart dsh web',
       'error.stale': 'The ledger is not from today',
       settings: 'Appearance',
       'settings.open': 'Appearance',
@@ -338,8 +320,6 @@ window.__ModuleLoader__.load({
       '.dbf-modal-version-label{font-size:10px;line-height:13px;color:var(--dsw-alias-label-secondary,currentColor);opacity:.8}',
       '.dbf-modal-version-value{font-size:12px;line-height:17px;font-weight:600;font-variant-numeric:tabular-nums}',
       '.dbf-modal-arrow{color:var(--dsw-alias-label-tertiary)}',
-      '.dbf-progress{height:6px;border-radius:3px;margin:10px 0 4px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));overflow:hidden}',
-      '.dbf-progress-fill{height:100%;border-radius:3px;background:var(--dsw-alias-brand-primary,#4d6bfe);transition:width .2s ease}',
       '.dbf-btn-primary{padding:4px 12px;border:0;border-radius:8px;background:var(--dsw-alias-label-primary,CanvasText);color:var(--dsw-alias-bg-base,Canvas);font:inherit;font-size:12px;font-weight:600;line-height:18px;cursor:pointer}',
       '.dbf-btn-primary:hover{filter:brightness(1.06)}',
       '.dbf-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}',
@@ -584,7 +564,7 @@ window.__ModuleLoader__.load({
     // The shell can re-mount the overlay when a run starts or stops. Component
     // state is lost then, so the live position lives at module scope too: a
     // remount must not snap the widget back to the stored default.
-    const shared = { frame: null, dir: 'up', dock: '', update: null, updateOpen: false, job: null };
+    const shared = { frame: null, dir: 'up', dock: '', update: null, updateOpen: false };
 
     /** The floating pill and its expanded card. */
     function BalanceFloat(props) {
@@ -617,83 +597,31 @@ window.__ModuleLoader__.load({
       const [update, setUpdate] = useState(shared.update);
       const [updateOpen, setUpdateOpen] = useState(shared.updateOpen);
       const updateCheckedAt = useRef(0);
-      // In-place update job reported by the Host.
-      const [job, setJob] = useState(shared.job);
-      const jobTimer = useRef(null);
+      const [copied, setCopied] = useState(false);
 
-      const pollJob = useCallback(() => {
-        if (jobTimer.current !== null) return;
-        jobTimer.current = window.setInterval(async () => {
+      /** Copy the install spec so the user can update from the plugin manager. */
+      const copyInstallSpec = useCallback(async () => {
+        try {
+          await navigator.clipboard.writeText(INSTALL_SPEC);
+        } catch {
+          const area = document.createElement('textarea');
+          area.value = INSTALL_SPEC;
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.select();
           try {
-            const response = await fetch(ROUTE_UPDATE_STATUS, { headers: { accept: 'application/json' }, cache: 'no-store' });
-            const body = await response.json();
-            if (!aliveRef.current) return;
-            if (response.ok && body?.job) {
-              setJob(body.job);
-              if (body.job.phase === 'done' || body.job.phase === 'error') {
-                window.clearInterval(jobTimer.current);
-                jobTimer.current = null;
-              }
-            }
-          } catch {
-            // Keep polling: the Host is busy writing files.
+            document.execCommand('copy');
+          } finally {
+            document.body.removeChild(area);
           }
-        }, 400);
+        }
+        setCopied(true);
+        window.setTimeout(() => {
+          if (aliveRef.current) setCopied(false);
+        }, 2200);
       }, []);
 
-      /** Ask the Host to re-initialise this plugin row, then reload the page. */
-      const reloadPlugin = useCallback(async () => {
-        setJob({ ...(job ?? {}), phase: 'reload', percent: 100 });
-        try {
-          await fetch(ROUTE_RELOAD, { method: 'POST', headers: { accept: 'application/json' } });
-        } catch {
-          // Even if the request dies with the old fiber the row is being replaced.
-        }
-        // Give the host time to disable+re-enable the row (client bundle included).
-        window.setTimeout(() => window.location.reload(), 2600);
-      }, [job]);
-
-      // An update that finished while the dialog was hidden (HMR remount) still
-      // has to complete: reload the plugin row and the page automatically.
-      useEffect(() => {
-        if (job === null || job.phase !== 'done') return;
-        const key = String(job.version || '') + '@' + String(job.at || '');
-        if (shared.reloadFired === key) return;
-        shared.reloadFired = key;
-        void reloadPlugin();
-      }, [job, reloadPlugin]);
-
-      // A remount during an in-place update must resume the progress polling.
-      useEffect(() => {
-        if (job === null) return;
-        if (job.phase !== 'download' && job.phase !== 'unpack' && job.phase !== 'apply') return;
-        pollJob();
-      }, [job, pollJob]);
-
-      const startUpdate = useCallback(async () => {
-        if (job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply')) return;
-        setJob({ phase: 'download', percent: 0 });
-        try {
-          const response = await fetch(ROUTE_UPDATE_RUN, { method: 'POST', headers: { accept: 'application/json' } });
-          const body = await response.json();
-          if (!aliveRef.current) return;
-          if (!response.ok || body?.ok === false) throw new Error(body?.error ?? 'HTTP ' + response.status);
-          if (body?.job) setJob(body.job);
-          pollJob();
-        } catch (error) {
-          if (aliveRef.current) setJob({ phase: 'error', percent: 0, message: error instanceof Error ? error.message : String(error) });
-        }
-      }, [job, pollJob]);
-
-      useEffect(
-        () => () => {
-          if (jobTimer.current !== null) {
-            window.clearInterval(jobTimer.current);
-            jobTimer.current = null;
-          }
-        },
-        [],
-      );
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -710,8 +638,7 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         shared.update = update;
         shared.updateOpen = updateOpen;
-        shared.job = job;
-      }, [update, updateOpen, job]);
+      }, [update, updateOpen]);
 
       // Forces a re-render so the countdown text follows the clock.
       const [, setTick] = useState(0);
@@ -1266,15 +1193,6 @@ window.__ModuleLoader__.load({
               : t('turn.meta', { time: clock(turn.at), tokens: tokens(turn.tokens) }),
           ),
           stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
-          typeof snapshot?.hostVersion === 'string' &&
-          snapshot.hostVersion !== '' &&
-          snapshot.hostVersion !== snapshot?.version
-            ? h(
-                'div',
-                { className: 'dbf-error', style: { marginTop: '4px' } },
-                t('error.hostStale', { host: snapshot.hostVersion, file: snapshot.version }),
-              )
-            : null,
         );
 
         const inputTokens = typeof snapshot?.todayInput === 'number' ? snapshot.todayInput : 0;
@@ -1712,17 +1630,6 @@ window.__ModuleLoader__.load({
             )
           : null;
 
-      const jobActive = job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply');
-      const phaseLabel =
-        job === null
-          ? ''
-          : job.phase === 'download'
-            ? t('update.downloading')
-            : job.phase === 'unpack'
-              ? t('update.unpacking')
-              : job.phase === 'apply'
-                ? t('update.applying')
-                : '';
       const updateModal =
         update === null || !updateOpen
           ? null
@@ -1734,7 +1641,7 @@ window.__ModuleLoader__.load({
                 'aria-modal': 'true',
                 'aria-label': t('update.title'),
                 onClick: (event) => {
-                  if (event.target === event.currentTarget && !jobActive) setUpdateOpen(false);
+                  if (event.target === event.currentTarget) setUpdateOpen(false);
                 },
               },
               h(
@@ -1746,122 +1653,75 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'dbf-modal-icon', 'aria-hidden': true }, '⟳'),
                   h('span', { className: 'dbf-modal-title' }, t('update.title')),
                 ),
-                job !== null && job.phase === 'reload'
-                  ? h('div', { className: 'dbf-modal-body' }, t('update.reloading'))
-                  : jobActive
-                  ? h(
-                      'div',
-                      null,
-                      h('div', { className: 'dbf-modal-body' }, phaseLabel + ' ' + Math.round(job.percent || 0) + '%'),
-                      h(
-                        'div',
-                        { className: 'dbf-progress' },
-                        h('div', { className: 'dbf-progress-fill', style: { width: Math.max(3, job.percent || 0) + '%' } }),
-                      ),
-                      h('div', { className: 'dbf-modal-note' }, t('update.keepOpen')),
-                    )
-                  : job !== null && job.phase === 'done'
+                update.phase === 'checking'
+                  ? h('div', { className: 'dbf-modal-body' }, t('update.checking'))
+                  : update.phase === 'error'
                     ? h(
                         'div',
                         null,
-                        h('div', { className: 'dbf-modal-body' }, t('update.done', { version: job.version || update.latest || '—' })),
-                        h('div', { className: 'dbf-modal-note' }, t('update.restart')),
+                        h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + update.error),
                         h(
                           'div',
                           { className: 'dbf-modal-actions' },
                           h(
                             'button',
-                            { type: 'button', className: 'dbf-textbtn', onClick: () => window.location.reload() },
-                            t('update.reloadOnly'),
-                          ),
-                          h(
-                            'button',
-                            { type: 'button', className: 'dbf-btn-primary', onClick: () => void reloadPlugin() },
-                            t('update.reloadPlugin'),
+                            { type: 'button', className: 'dbf-btn-primary', onClick: () => void checkUpdate(true) },
+                            t('update.retry'),
                           ),
                         ),
                       )
-                    : job !== null && job.phase === 'error'
+                    : update.hasUpdate
                       ? h(
                           'div',
                           null,
-                          h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + (job.message || '')),
+                          h('div', { className: 'dbf-modal-body' }, t('update.found', { latest: update.latest, current: update.current })),
+                          h(
+                            'div',
+                            { className: 'dbf-modal-versions' },
+                            h(
+                              'span',
+                              { className: 'dbf-modal-version' },
+                              h('span', { className: 'dbf-modal-version-label' }, t('update.label.current')),
+                              h('span', { className: 'dbf-modal-version-value' }, 'v' + (update.current || '—')),
+                            ),
+                            h('span', { className: 'dbf-modal-arrow', 'aria-hidden': true }, '→'),
+                            h(
+                              'span',
+                              { className: 'dbf-modal-version is-new' },
+                              h('span', { className: 'dbf-modal-version-label' }, t('update.label.latest')),
+                              h('span', { className: 'dbf-modal-version-value' }, 'v' + update.latest),
+                            ),
+                          ),
+                          h('div', { className: 'dbf-modal-note' }, t('update.installHint')),
                           h(
                             'div',
                             { className: 'dbf-modal-actions' },
                             h(
                               'button',
                               { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
-                              t('settings.done'),
+                              t('update.later'),
                             ),
-                            h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void startUpdate() }, t('update.retry')),
+                            h(
+                              'button',
+                              { type: 'button', className: 'dbf-btn-primary', onClick: () => void copyInstallSpec() },
+                              copied ? t('update.copied') : t('update.copy'),
+                            ),
                           ),
                         )
-                      : update.phase === 'checking'
-                        ? h('div', { className: 'dbf-modal-body' }, t('update.checking'))
-                        : update.phase === 'error'
-                          ? h(
-                              'div',
-                              null,
-                              h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + update.error),
-                              h(
-                                'div',
-                                { className: 'dbf-modal-actions' },
-                                h(
-                                  'button',
-                                  { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
-                                  t('settings.done'),
-                                ),
-                                h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void checkUpdate(true) }, t('update.retry')),
-                              ),
-                            )
-                          : update.hasUpdate
-                            ? h(
-                                'div',
-                                null,
-                                h('div', { className: 'dbf-modal-body' }, t('update.found', { latest: update.latest, current: update.current })),
-                                h(
-                                  'div',
-                                  { className: 'dbf-modal-versions' },
-                                  h(
-                                    'span',
-                                    { className: 'dbf-modal-version' },
-                                    h('span', { className: 'dbf-modal-version-label' }, t('update.label.current')),
-                                    h('span', { className: 'dbf-modal-version-value' }, 'v' + (update.current || '—')),
-                                  ),
-                                  h('span', { className: 'dbf-modal-arrow', 'aria-hidden': true }, '→'),
-                                  h(
-                                    'span',
-                                    { className: 'dbf-modal-version is-new' },
-                                    h('span', { className: 'dbf-modal-version-label' }, t('update.label.latest')),
-                                    h('span', { className: 'dbf-modal-version-value' }, 'v' + update.latest),
-                                  ),
-                                ),
-                                h(
-                                  'div',
-                                  { className: 'dbf-modal-actions' },
-                                  h(
-                                    'button',
-                                    { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
-                                    t('update.later'),
-                                  ),
-                                  h('button', { type: 'button', className: 'dbf-btn-primary', onClick: () => void startUpdate() }, t('update.now')),
-                                ),
-                              )
-                            : h(
-                                'div',
-                                null,
-                                h('div', { className: 'dbf-modal-body' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
-                                h(
-                                  'div',
-                                  { className: 'dbf-modal-actions' },
-                                  h(
-                                    'button',
-                                    { type: 'button', className: 'dbf-btn-primary', onClick: () => setUpdateOpen(false) },
-                                    t('settings.done'),
-                                  ),
-                                ),
-                              ),
+                      : h(
+                          'div',
+                          null,
+                          h('div', { className: 'dbf-modal-body' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
+                          h(
+                            'div',
+                            { className: 'dbf-modal-actions' },
+                            h(
+                              'button',
+                              { type: 'button', className: 'dbf-btn-primary', onClick: () => setUpdateOpen(false) },
+                              t('settings.done'),
+                            ),
+                          ),
+                        ),
               ),
             );
 

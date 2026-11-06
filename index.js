@@ -15,11 +15,7 @@
  * browser-facing endpoint. No credential value ever leaves the Host process and
  * nothing is logged about it.
  */
-import { execFile } from 'node:child_process'
-import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, statSync } from 'node:fs'
 import { loadState, resolvePaths, saveState } from './lib/ledger.js'
 import { buildSnapshot } from './lib/snapshot.js'
 import { createTracker } from './lib/tracker.js'
@@ -100,88 +96,8 @@ async function checkUpdate({ fresh = false } = {}) {
   }
 }
 
-/**
- * In-place self-update: download the default branch tarball, unpack it and copy
- * every file except `.git` over this package. The running Host keeps executing
- * the old module until it is reloaded, so the browser half is told to reload.
- */
-let updateJob = { phase: 'idle', percent: 0, message: '', version: '', at: 0 }
-
-function setJob(patch) {
-  updateJob = { ...updateJob, ...patch, at: Date.now() }
-}
-
-async function downloadTarball(dest) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 60000)
-  try {
-    const response = await fetch(TARBALL_URL, { signal: controller.signal, headers: { 'user-agent': 'dsh-balance-float' } })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const total = Number(response.headers.get('content-length') || 0)
-    const chunks = []
-    let received = 0
-    for await (const chunk of response.body) {
-      chunks.push(chunk)
-      received += chunk.length
-      // Keep 100% for the copy phase, the download itself stops at 90%.
-      if (total > 0) setJob({ phase: 'download', percent: Math.min(90, Math.round((received / total) * 90)) })
-    }
-    writeFileSync(dest, Buffer.concat(chunks))
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
-function unpack(tarball, dir) {
-  return new Promise((resolve, reject) => {
-    execFile('tar', ['-xzf', tarball, '-C', dir], (error) => (error ? reject(error) : resolve()))
-  })
-}
-
-async function runUpdate() {
-  setJob({ phase: 'download', percent: 0, message: '', version: '', at: Date.now() })
-  const dir = mkdtempSync(path.join(tmpdir(), 'dsh-balance-float-'))
-  try {
-    const tarball = path.join(dir, 'src.tar.gz')
-    await downloadTarball(tarball)
-    setJob({ phase: 'unpack', percent: 92 })
-    await unpack(tarball, dir)
-    const extracted = readdirSync(dir).find((name) => name.startsWith('dsh-balance-float-'))
-    if (extracted === undefined) throw new Error('archive layout unexpected')
-    const source = path.join(dir, extracted)
-    setJob({ phase: 'apply', percent: 96 })
-    for (const name of readdirSync(source)) {
-      if (name === '.git') continue
-      cpSync(path.join(source, name), path.join(PACKAGE_DIR, name), { recursive: true, force: true })
-    }
-    setJob({ phase: 'done', percent: 100, version: packageVersion() })
-  } catch (error) {
-    setJob({ phase: 'error', percent: 0, message: error instanceof Error ? error.message : String(error) })
-  } finally {
-    try {
-      rmSync(dir, { recursive: true, force: true })
-    } catch {
-      // temp cleanup is best effort
-    }
-  }
-}
-
-/** Version of the code loaded into this process (differs from disk after an in-place update). */
-const BOOT_VERSION = packageVersion()
-
-export const name = 'balance-float'
-
-/** Services this plugin cannot work without (`credentials` is read optionally). */
-export const inject = ['webServer', 'timer']
-
 const ROUTE = '/balance-float/snapshot'
 const ROUTE_UPDATE = '/balance-float/update'
-const ROUTE_UPDATE_RUN = '/balance-float/update/run'
-const ROUTE_UPDATE_STATUS = '/balance-float/update/status'
-const ROUTE_RELOAD = '/balance-float/reload'
-const ENTRY_ID = 'balance-float'
-const TARBALL_URL = 'https://codeload.github.com/ming-a1/dsh-balance-float/tar.gz/refs/heads/main'
-const PACKAGE_DIR = path.dirname(fileURLToPath(import.meta.url))
 const BALANCE_URL = 'https://api.deepseek.com/user/balance'
 const BALANCE_TIMEOUT_MS = 8000
 
@@ -210,48 +126,6 @@ function numeric(value) {
  */
 export function apply(ctx, config) {
   const paths = resolvePaths(config)
-  const reloadLog = path.join(path.dirname(paths.store), 'reload.log')
-  const noteReload = (line) => {
-    try {
-      appendFileSync(reloadLog, `${new Date().toISOString()} ${line}\n`)
-    } catch {
-      // diagnostics only
-    }
-  }
-  noteReload(`module v${packageVersion()}`)
-  // Which client-graph id does this bundle get? Needed to republish it after a
-  // self-reload (rebuilt(id) is a no-op for an unknown id).
-  try {
-    const modules = ctx.get('clientModules')
-    const graph = modules?.graph?.()
-    const entries = graph?.entries
-    const rows = Array.isArray(entries) ? entries : entries instanceof Map ? [...entries.values()] : []
-    const ids = rows.map((entry) => entry?.id ?? entry?.packageName).filter(Boolean)
-    const clientPath = typeof modules?.clientPath === 'function' ? modules.clientPath('dsh-balance-float') : undefined
-    noteReload(
-      `graph keys=${graph === undefined ? 'none' : Object.keys(graph).join('|')} rows=${ids.length} float=[${ids.filter((id) => String(id).includes('float')).join(',')}] clientPath=${String(clientPath)}`,
-    )
-  } catch (error) {
-    noteReload(`graph error ${error instanceof Error ? error.message : String(error)}`)
-  }
-  const loaded = loadState(config)
-  const refreshSeconds = Number.isFinite(config?.refreshSeconds) ? Math.max(5, Math.floor(config.refreshSeconds)) : 20
-  const apiKeyRef =
-    typeof config?.apiKeyRef === 'string' && config.apiKeyRef.trim() !== '' ? config.apiKeyRef.trim() : 'DEEPSEEK_API_KEY'
-
-  let pollTimer = null
-  let polling = false
-
-  const tracker = createTracker({
-    state: loaded.state,
-    storePath: paths.store,
-    logger: ctx.logger,
-    onTurn: () => schedulePoll(1500),
-  })
-
-  // Materialize the ledger right away: on a first run this persists the seed
-  // copied from the legacy ledger, so the widget starts from known values.
-  saveState(paths.store, tracker.state)
   const seededAt = Date.now()
 
   /** Read the configured credential and refresh the balance. */
@@ -344,7 +218,6 @@ export function apply(ctx, config) {
               mtimeMs: tracker.lastSavedAt > 0 ? tracker.lastSavedAt : seededAt,
               serverNow: Date.now(),
               version: packageVersion(),
-              hostVersion: BOOT_VERSION,
             })
             respondJson(res, 200, snapshot)
           } catch (error) {
@@ -381,157 +254,6 @@ export function apply(ctx, config) {
         },
       }),
     'balance-float: update route',
-  )
-
-  ctx.effect(
-    () =>
-      ctx.webServer.register({
-        kind: 'exact',
-        path: ROUTE_UPDATE_STATUS,
-        handler: (req, res) => {
-          const rejection = ctx.get('connection')?.requestRejection?.({ headers: req.headers })
-          if (rejection !== undefined) {
-            respondJson(res, rejection === 401 ? 401 : 403, { ok: false, error: 'forbidden' })
-            return
-          }
-          respondJson(res, 200, { ok: true, job: updateJob })
-        },
-      }),
-    'balance-float: update status route',
-  )
-
-  ctx.effect(
-    () =>
-      ctx.webServer.register({
-        kind: 'exact',
-        path: ROUTE_UPDATE_RUN,
-        handler: (req, res) => {
-          if (req.method !== 'POST') {
-            respondJson(res, 405, { ok: false, error: 'method not allowed' })
-            return
-          }
-          const rejection = ctx.get('connection')?.requestRejection?.({ headers: req.headers })
-          if (rejection !== undefined) {
-            respondJson(res, rejection === 401 ? 401 : 403, { ok: false, error: 'forbidden' })
-            return
-          }
-          if (updateJob.phase === 'download' || updateJob.phase === 'unpack' || updateJob.phase === 'apply') {
-            respondJson(res, 200, { ok: true, job: updateJob })
-            return
-          }
-          respondJson(res, 202, { ok: true, job: updateJob })
-          void runUpdate()
-        },
-      }),
-    'balance-float: update run route',
-  )
-
-  ctx.effect(
-    () =>
-      ctx.webServer.register({
-        kind: 'exact',
-        path: ROUTE_RELOAD,
-        handler: (req, res) => {
-          if (req.method !== 'POST') {
-            respondJson(res, 405, { ok: false, error: 'method not allowed' })
-            return
-          }
-          const rejection = ctx.get('connection')?.requestRejection?.({ headers: req.headers })
-          if (rejection !== undefined) {
-            respondJson(res, rejection === 401 ? 401 : 403, { ok: false, error: 'forbidden' })
-            return
-          }
-          // Answer first, then dispose/re-init this very row: the response must
-          // be flushed before the fiber that owns this handler goes away.
-          respondJson(res, 202, { ok: true })
-          noteReload(`start host=${BOOT_VERSION} disk=${packageVersion()}`)
-          setTimeout(() => {
-            void (async () => {
-              try {
-                const loader = ctx.get('loader')
-                const entries = loader === undefined || typeof loader.entries !== 'function' ? [] : [...loader.entries()]
-                noteReload(`entries=${entries.length}`)
-                const entry = entries.find(
-                  (row) =>
-                    (row.id ?? row.options?.id) === ENTRY_ID ||
-                    row.options?.id === ENTRY_ID ||
-                    row.options?.name === 'dsh-balance-float',
-                )
-                if (entry === undefined) {
-                  noteReload('row not found')
-                  ctx.logger?.warn?.('balance-float: reload requested but the row was not found')
-                  return
-                }
-                // Node caches ES modules by URL: drop our entries so refresh()
-                // re-evaluates the files the updater just wrote. The cache is a
-                // Map subclass whose own methods are patched, so go through
-                // Map.prototype exactly like the HMR service does.
-                const hmr = ctx.get('hmr')
-                const urls = typeof hmr?.esmUrls === 'function' ? hmr.esmUrls() : []
-                const cache = loader?.internal?.loadCache
-                let busted = 0
-                if (cache !== undefined && cache !== null) {
-                  for (const url of urls) {
-                    if (typeof url !== 'string' || !url.includes('/balance-float/')) continue
-                    Map.prototype.delete.call(cache, url)
-                    busted += 1
-                  }
-                }
-                const sample = urls.filter((url) => typeof url === 'string' && url.includes('balance-float')).slice(0, 2).join(' ')
-                noteReload(`bust=${busted}/${urls.length} ${sample}`)
-                // Re-publish the client bundle: the browser bundle URL carries a
-                // rev derived from the file, and without this the boot graph keeps
-                // the old rev (the pill silently disappears after the update).
-                let rebuiltRev = 'none'
-                try {
-                  const modules = ctx.get('clientModules')
-                  if (typeof modules?.rebuilt === 'function') {
-                    for (const id of ['dsh-balance-float', 'balance-float', 'include:balance-float']) {
-                      const rev = modules.rebuilt(id)
-                      if (rev !== undefined) {
-                        rebuiltRev = `${id}:${rev}`
-                        break
-                      }
-                    }
-                  }
-                } catch (error) {
-                  rebuiltRev = `error:${error instanceof Error ? error.message : String(error)}`
-                }
-                noteReload(`rebuilt=${rebuiltRev}`)
-                // A bare dispose+init keeps the host alive but drops the client
-                // bundle entry, and reconcileProfile alone does not restart a row
-                // whose profile patch did not change. The only path that rebuilds
-                // both halves is the one the plugin manager UI uses: persist the
-                // row as disabled, then enabled again.
-                const manager = ctx.get('pluginManager')
-                if (typeof manager?.setPluginEnabled === 'function') {
-                  const id = 'include:balance-float'
-                  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-                  noteReload('toggle off')
-                  await manager.setPluginEnabled(id, false)
-                  await sleep(400)
-                  noteReload('toggle on')
-                  await manager.setPluginEnabled(id, true)
-                } else {
-                  await entry.fiber?.dispose?.()
-                  try {
-                    entry.fiber = undefined
-                  } catch {
-                    // frozen entry: fall through to refresh
-                  }
-                  if (typeof entry.init === 'function') await entry.init()
-                  else await entry.refresh?.()
-                }
-                noteReload('done')
-              } catch (error) {
-                noteReload(`failed ${error instanceof Error ? error.message : String(error)}`)
-                ctx.logger?.warn?.(`balance-float: self reload failed: ${error instanceof Error ? error.message : String(error)}`)
-              }
-            })()
-          }, 400)
-        },
-      }),
-    'balance-float: reload route',
   )
 
   // First reading right after activation; the interval below covers the rest.
