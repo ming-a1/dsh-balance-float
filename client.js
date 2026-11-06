@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     const NS = 'balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
-    const INSTALL_SPEC = 'github:ming-a1/dsh-balance-float';
+    const REPO_TARBALL = 'https://codeload.github.com/ming-a1/dsh-balance-float/tar.gz/refs/tags/v';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -120,7 +120,7 @@ window.__ModuleLoader__.load({
       'update.now': '更新',
       'update.copy': '复制安装链接',
       'update.copied': '已复制 ✓',
-      'update.installHint': '在插件管理里用该 spec 重新安装即可升级。',
+      'update.installHint': '复制后到插件管理器里粘贴安装（tarball 地址，不会调用 git）。',
       'update.later': '稍后',
       'update.retry': '点击重试',
       source: '本地账本',
@@ -216,7 +216,7 @@ window.__ModuleLoader__.load({
       'update.now': 'Update',
       'update.copy': 'Copy install spec',
       'update.copied': 'Copied ✓',
-      'update.installHint': 'Reinstall from the plugin manager with this spec to upgrade.',
+      'update.installHint': 'Paste this tarball URL into the plugin manager to upgrade (no git involved).',
       'update.later': 'Later',
       'update.retry': 'click to retry',
       source: 'Local ledger',
@@ -601,11 +601,14 @@ window.__ModuleLoader__.load({
 
       /** Copy the install spec so the user can update from the plugin manager. */
       const copyInstallSpec = useCallback(async () => {
+        // Tarball spec: `github:` installs run `git ls-remote`, which fails in
+        // Host processes whose GIT_CONFIG_* env is malformed.
+        const spec = update !== null && update.latest !== '' ? REPO_TARBALL + update.latest : REPO_URL;
         try {
-          await navigator.clipboard.writeText(INSTALL_SPEC);
+          await navigator.clipboard.writeText(spec);
         } catch {
           const area = document.createElement('textarea');
-          area.value = INSTALL_SPEC;
+          area.value = spec;
           area.style.position = 'fixed';
           area.style.opacity = '0';
           document.body.appendChild(area);
@@ -620,7 +623,7 @@ window.__ModuleLoader__.load({
         window.setTimeout(() => {
           if (aliveRef.current) setCopied(false);
         }, 2200);
-      }, []);
+      }, [update]);
 
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
