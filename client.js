@@ -37,7 +37,12 @@ window.__ModuleLoader__.load({
     // two are strength in percent.
     // 16 is the pill's half height: the default keeps the capsule look while the
     // card gets a matching 16px corner.
-    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 16 };
+    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 16, dockBall: true };
+    // Docking: a drop this close to a side edge turns the pill into a square
+    // ball pinned DOCK_MARGIN px from that edge.
+    const DOCK_ZONE = 56;
+    const DOCK_MARGIN = 8;
+    const DOCK_KEY = 'dsh.balance-float.dock';
     // A 4s cadence keeps the balance and today's spend close to the ledger; the
     // route only reads a cached local file, so this stays cheap.
     const POLL_MS = 4000;
@@ -97,6 +102,8 @@ window.__ModuleLoader__.load({
       'settings.border': '边框',
       'settings.shadow': '阴影',
       'settings.radius': '圆角',
+      'settings.dock': '贴边收成小球',
+      'settings.dock.hint': '拖到左右边缘时收成方形小球，只显示余额',
       'settings.reset': '恢复默认',
       'settings.hint': '只保存在本机浏览器，刷新后仍然生效。',
       'settings.done': '完成',
@@ -157,6 +164,8 @@ window.__ModuleLoader__.load({
       'settings.border': 'Border',
       'settings.shadow': 'Shadow',
       'settings.radius': 'Corner radius',
+      'settings.dock': 'Ball at the edge',
+      'settings.dock.hint': 'Dropping on the left or right edge shrinks it to a ball that shows only the balance',
       'settings.reset': 'Reset',
       'settings.hint': 'Saved in this browser only; it survives reloads.',
       'settings.done': 'Done',
@@ -205,6 +214,18 @@ window.__ModuleLoader__.load({
       '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;touch-action:auto;overscroll-behavior:contain}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+      '.dbf-pill.is-ball{width:56px;height:56px;padding:0;justify-content:center;gap:0;font-size:11px;line-height:14px}',
+      '.dbf-pill.is-ball .dbf-num{font-size:11px;font-weight:600}',
+      '.dbf-bubble.is-side{animation-name:dbf-flash-side}',
+      '.dbf-bubble.is-right-of{top:50%;left:calc(100% + 8px);right:auto;bottom:auto;transform:translateY(-50%)}',
+      '.dbf-bubble.is-left-of{top:50%;right:calc(100% + 8px);left:auto;bottom:auto;transform:translateY(-50%)}',
+      '.dbf-bubble.is-right-of .dbf-bubble-caret{top:50%;left:-4px;margin-top:-4px;transform:rotate(-45deg)}',
+      '.dbf-bubble.is-left-of .dbf-bubble-caret{top:50%;right:-4px;left:auto;margin-top:-4px;transform:rotate(135deg)}',
+      '@keyframes dbf-flash-side{0%{opacity:0}12%{opacity:1}84%{opacity:1}100%{opacity:0}}',
+      '.dbf-switch{flex:none;width:34px;height:20px;padding:0;border-radius:999px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));position:relative;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
+      '.dbf-switch.is-on{background:var(--dsw-alias-brand-primary,#4d6bfe);border-color:transparent}',
+      '.dbf-switch-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s ease}',
+      '.dbf-switch.is-on .dbf-switch-knob{transform:translateX(14px)}',
       '.dbf-topup{flex:none;padding:3px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,currentColor));background:var(--dsw-alias-button-primary-dimmed,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;font-weight:600;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
@@ -380,9 +401,28 @@ window.__ModuleLoader__.load({
           border: pick(parsed?.border, 0, 100, DEFAULT_APPEARANCE.border),
           shadow: pick(parsed?.shadow, 0, 100, DEFAULT_APPEARANCE.shadow),
           radius: pick(parsed?.radius, 0, 20, DEFAULT_APPEARANCE.radius),
+          dockBall: parsed?.dockBall !== false,
         };
       } catch {
         return { ...DEFAULT_APPEARANCE };
+      }
+    }
+
+    /** Which edge the pill is docked to: 'left' | 'right' | ''. */
+    function readDock() {
+      try {
+        const raw = window.localStorage.getItem(DOCK_KEY);
+        return raw === 'left' || raw === 'right' ? raw : '';
+      } catch {
+        return '';
+      }
+    }
+
+    function persistDock(side) {
+      try {
+        window.localStorage.setItem(DOCK_KEY, side);
+      } catch {
+        // Private mode: docking lasts for this page view only.
       }
     }
 
@@ -419,7 +459,7 @@ window.__ModuleLoader__.load({
     // The shell can re-mount the overlay when a run starts or stops. Component
     // state is lost then, so the live position lives at module scope too: a
     // remount must not snap the widget back to the stored default.
-    const shared = { frame: null, dir: 'up' };
+    const shared = { frame: null, dir: 'up', dock: '' };
 
     /** The floating pill and its expanded card. */
     function BalanceFloat(props) {
@@ -433,6 +473,7 @@ window.__ModuleLoader__.load({
       const [appearance, setAppearance] = useState(readAppearance);
       const [frame, setFrame] = useState(() => shared.frame ?? readPosition());
       const [dir, setDir] = useState(shared.dir);
+      const [dock, setDock] = useState(() => shared.dock || readDock());
       const rootRef = useRef(null);
       const dragRef = useRef(null);
       const positionRef = useRef(null);
@@ -451,6 +492,9 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         shared.dir = dir;
       }, [dir]);
+      useEffect(() => {
+        shared.dock = dock;
+      }, [dock]);
 
       // Forces a re-render so the countdown text follows the clock.
       const [, setTick] = useState(0);
@@ -470,6 +514,26 @@ window.__ModuleLoader__.load({
         const id = window.setInterval(() => setTick((value) => value + 1), 1000);
         return () => window.clearInterval(id);
       }, []);
+
+      // A stored dock always hugs its edge, even if the saved top pixel drifted
+      // (window resized between sessions).
+      useEffect(() => {
+        if (dock === '') return;
+        const current = shared.frame ?? readPosition();
+        const top = current !== null && Number.isFinite(current.top) ? current.top : null;
+        if (top === null) return;
+        const snapped = dock === 'left' ? { left: DOCK_MARGIN, top } : { right: DOCK_MARGIN, top };
+        shared.frame = snapped;
+        setFrame(snapped);
+        // Only on mount: later changes come from the drag itself.
+      }, []);
+
+      useEffect(() => {
+        if (appearance.dockBall || dock === '') return;
+        shared.dock = '';
+        setDock('');
+        persistDock('');
+      }, [appearance.dockBall, dock]);
 
       // Flip the turn bubble above the pill when the space below is too small
       // (the composer sits there). Re-measure on view changes only: doing it on
@@ -733,6 +797,28 @@ window.__ModuleLoader__.load({
           dragRef.current = null;
           if (drag.moved) {
             commitDrag();
+            const node = rootRef.current;
+            if (node !== null && appearance.dockBall) {
+              const rect = node.getBoundingClientRect();
+              const side = rect.left <= DOCK_ZONE ? 'left' : window.innerWidth - rect.right <= DOCK_ZONE ? 'right' : '';
+              if (side !== dock) {
+                shared.dock = side;
+                setDock(side);
+                persistDock(side);
+              }
+              if (side !== '') {
+                const snapped = side === 'left'
+                  ? { left: DOCK_MARGIN, top: rect.top }
+                  : { right: DOCK_MARGIN, top: rect.top };
+                shared.frame = snapped;
+                setFrame(snapped);
+                persist(side === 'left' ? { left: DOCK_MARGIN, top: rect.top } : { left: Math.max(4, window.innerWidth - 56 - DOCK_MARGIN), top: rect.top });
+              }
+            } else if (node !== null && dock !== '') {
+              shared.dock = '';
+              setDock('');
+              persistDock('');
+            }
             return;
           }
           if (open) closeView();
@@ -743,7 +829,7 @@ window.__ModuleLoader__.load({
         window.addEventListener('pointerup', onEnd, true);
         window.addEventListener('pointercancel', onEnd, true);
         window.addEventListener('touchmove', onTouch, { capture: true, passive: false });
-      }, [persistThrottled, commitDrag, open, closeView, openView]);
+      }, [persistThrottled, commitDrag, open, closeView, openView, appearance.dockBall, dock]);
 
       useEffect(() => () => {
         if (detachRef.current !== null) detachRef.current();
@@ -782,24 +868,29 @@ window.__ModuleLoader__.load({
 
       const dot = h('span', { className: 'dbf-dot ' + (peakActive ? 'is-peak' : 'is-valley'), 'aria-hidden': true });
 
-      const pill = h(
-        'div',
-        {
-          key: 'pill',
-          className: 'dbf-pill dbf-surface',
-          role: 'button',
-          tabIndex: 0,
-          'aria-label': t('title'),
-          title: t('title'),
-          onPointerDown,
-          onKeyDown: (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              if (open) closeView();
-              else openView();
-            }
-          },
+      // Docked to a side edge: a square ball that only shows the balance.
+      const docked = appearance.dockBall && dock !== '';
+      const pillProps = {
+        key: 'pill',
+        className: 'dbf-pill dbf-surface' + (docked ? ' is-ball' : ''),
+        role: 'button',
+        tabIndex: 0,
+        'aria-label': t('title'),
+        title: t('title'),
+        onPointerDown,
+        onKeyDown: (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            if (open) closeView();
+            else openView();
+          }
         },
+      };
+      const pill = docked
+        ? h('div', pillProps, h('span', { className: 'dbf-num' }, '¥' + money(snapshot?.balance)))
+        : h(
+        'div',
+        pillProps,
         dot,
         h('span', { className: 'dbf-label' }, t('pill.balance')),
         h('span', { className: 'dbf-num' }, '¥' + money(snapshot?.balance)),
@@ -1117,6 +1208,28 @@ window.__ModuleLoader__.load({
             settingsRow('radius', t('settings.radius'), appearance.radius, 20, 'px'),
             h(
               'div',
+              { className: 'dbf-setting' },
+              h(
+                'div',
+                { className: 'dbf-row' },
+                h('span', { className: 'dbf-label' }, t('settings.dock')),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'dbf-switch' + (appearance.dockBall ? ' is-on' : ''),
+                    role: 'switch',
+                    'aria-checked': appearance.dockBall ? 'true' : 'false',
+                    'aria-label': t('settings.dock'),
+                    onClick: () => changeAppearance('dockBall', !appearance.dockBall),
+                  },
+                  h('span', { className: 'dbf-switch-knob' }),
+                ),
+              ),
+              h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('settings.dock.hint')),
+            ),
+            h(
+              'div',
               { className: 'dbf-block', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
               h('span', { className: 'dbf-sub', style: { marginTop: 0 } }, t('settings.hint')),
               h(
@@ -1138,7 +1251,13 @@ window.__ModuleLoader__.load({
         !open && !settingsOpen && flash && turn !== null
           ? h(
               'div',
-              { key: 'bubble', className: 'dbf-bubble dbf-surface' + (bubbleUp ? ' is-up' : ''), 'aria-live': 'polite' },
+              {
+                key: 'bubble',
+                className:
+                  'dbf-bubble dbf-surface' +
+                  (docked ? (dock === 'left' ? ' is-side is-right-of' : ' is-side is-left-of') : bubbleUp ? ' is-up' : ''),
+                'aria-live': 'polite',
+              },
               h('span', { className: 'dbf-bubble-caret', 'aria-hidden': true }),
               h('span', { className: 'dbf-bubble-label' }, t('turn.label')),
               h('span', { className: 'dbf-bubble-amount' }, '¥' + money(turn.cost)),
