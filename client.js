@@ -35,7 +35,7 @@ window.__ModuleLoader__.load({
     const APPEARANCE_KEY = 'dsh.balance-float.appearance';
     // `bg` is transparency in percent (0 = solid token background), the other
     // two are strength in percent.
-    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100 };
+    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 14 };
     // A 4s cadence keeps the balance and today's spend close to the ledger; the
     // route only reads a cached local file, so this stays cheap.
     const POLL_MS = 4000;
@@ -94,6 +94,7 @@ window.__ModuleLoader__.load({
       'settings.bg': '背景透明度',
       'settings.border': '边框',
       'settings.shadow': '阴影',
+      'settings.radius': '圆角',
       'settings.reset': '恢复默认',
       'settings.hint': '只保存在本机浏览器，刷新后仍然生效。',
       'settings.done': '完成',
@@ -153,6 +154,7 @@ window.__ModuleLoader__.load({
       'settings.bg': 'Background transparency',
       'settings.border': 'Border',
       'settings.shadow': 'Shadow',
+      'settings.radius': 'Corner radius',
       'settings.reset': 'Reset',
       'settings.hint': 'Saved in this browser only; it survives reloads.',
       'settings.done': 'Done',
@@ -186,7 +188,7 @@ window.__ModuleLoader__.load({
       '.dbf-dot.is-peak{background:var(--dsw-alias-state-error-primary)}',
       '.dbf-dot.is-valley{background:var(--dsw-alias-state-success-primary)}',
       '.dbf-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}',
-      '.dbf-card{width:316px;border-radius:14px;background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
+      '.dbf-card{width:316px;border-radius:calc(var(--dbf-radius,14) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card{animation-name:dbf-open-up}',
       '.dbf-head{display:flex;align-items:center;gap:8px;padding:9px 11px;background:transparent;border-bottom:.5px solid var(--dsw-alias-border-l1);cursor:grab;user-select:none;touch-action:none}',
       '.dbf-head.is-static{cursor:default}',
@@ -375,6 +377,7 @@ window.__ModuleLoader__.load({
           bg: pick(parsed?.bg, 0, 90, DEFAULT_APPEARANCE.bg),
           border: pick(parsed?.border, 0, 100, DEFAULT_APPEARANCE.border),
           shadow: pick(parsed?.shadow, 0, 100, DEFAULT_APPEARANCE.shadow),
+          radius: pick(parsed?.radius, 0, 20, DEFAULT_APPEARANCE.radius),
         };
       } catch {
         return { ...DEFAULT_APPEARANCE };
@@ -772,6 +775,7 @@ window.__ModuleLoader__.load({
         '--dbf-bg': String((100 - appearance.bg) / 100),
         '--dbf-border': String(appearance.border / 100),
         '--dbf-shadow': String(appearance.shadow / 100),
+        '--dbf-radius': String(appearance.radius),
       };
 
       const dot = h('span', { className: 'dbf-dot ' + (peakActive ? 'is-peak' : 'is-valley'), 'aria-hidden': true });
@@ -1057,8 +1061,7 @@ window.__ModuleLoader__.load({
 
       let settingsPanel = null;
       if (settingsOpen || leaving) {
-        const settingsRow = (key, label, value) => {
-          const max = key === 'bg' ? 90 : 100;
+        const settingsRow = (key, label, value, max, unit) => {
           const percent = (value / max) * 100;
           return h(
             'div',
@@ -1067,7 +1070,7 @@ window.__ModuleLoader__.load({
               'div',
               { className: 'dbf-row' },
               h('span', { className: 'dbf-label' }, label),
-              h('span', { className: 'dbf-setting-val' }, value + '%'),
+              h('span', { className: 'dbf-setting-val' }, value + unit),
             ),
             h(
               'div',
@@ -1106,9 +1109,10 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'dbf-body' },
-            settingsRow('bg', t('settings.bg'), appearance.bg),
-            settingsRow('border', t('settings.border'), appearance.border),
-            settingsRow('shadow', t('settings.shadow'), appearance.shadow),
+            settingsRow('bg', t('settings.bg'), appearance.bg, 90, '%'),
+            settingsRow('border', t('settings.border'), appearance.border, 100, '%'),
+            settingsRow('shadow', t('settings.shadow'), appearance.shadow, 100, '%'),
+            settingsRow('radius', t('settings.radius'), appearance.radius, 20, 'px'),
             h(
               'div',
               { className: 'dbf-block', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
