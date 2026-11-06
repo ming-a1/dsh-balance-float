@@ -584,7 +584,7 @@ window.__ModuleLoader__.load({
     // The shell can re-mount the overlay when a run starts or stops. Component
     // state is lost then, so the live position lives at module scope too: a
     // remount must not snap the widget back to the stored default.
-    const shared = { frame: null, dir: 'up', dock: '' };
+    const shared = { frame: null, dir: 'up', dock: '', update: null, updateOpen: false, job: null };
 
     /** The floating pill and its expanded card. */
     function BalanceFloat(props) {
@@ -614,11 +614,11 @@ window.__ModuleLoader__.load({
       // Token buckets are collapsed until asked for.
       const [tokensOpen, setTokensOpen] = useState(false);
       // Update check: null | {phase, latest, current, hasUpdate, error}
-      const [update, setUpdate] = useState(null);
-      const [updateOpen, setUpdateOpen] = useState(false);
+      const [update, setUpdate] = useState(shared.update);
+      const [updateOpen, setUpdateOpen] = useState(shared.updateOpen);
       const updateCheckedAt = useRef(0);
       // In-place update job reported by the Host.
-      const [job, setJob] = useState(null);
+      const [job, setJob] = useState(shared.job);
       const jobTimer = useRef(null);
 
       const pollJob = useCallback(() => {
@@ -651,6 +651,13 @@ window.__ModuleLoader__.load({
         }
         window.setTimeout(() => window.location.reload(), 900);
       }, [job]);
+
+      // A remount during an in-place update must resume the progress polling.
+      useEffect(() => {
+        if (job === null) return;
+        if (job.phase !== 'download' && job.phase !== 'unpack' && job.phase !== 'apply') return;
+        pollJob();
+      }, [job, pollJob]);
 
       const startUpdate = useCallback(async () => {
         if (job !== null && (job.phase === 'download' || job.phase === 'unpack' || job.phase === 'apply')) return;
@@ -689,6 +696,11 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         shared.dock = dock;
       }, [dock]);
+      useEffect(() => {
+        shared.update = update;
+        shared.updateOpen = updateOpen;
+        shared.job = job;
+      }, [update, updateOpen, job]);
 
       // Forces a re-render so the countdown text follows the clock.
       const [, setTick] = useState(0);
