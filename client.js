@@ -311,7 +311,10 @@ window.__ModuleLoader__.load({
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
       '.dbf-modal{position:fixed;top:0;right:0;bottom:0;left:0;height:100dvh;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.45);overscroll-behavior:contain;touch-action:none}',
-      '.dbf-dialog{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:auto;overscroll-behavior:contain}',
+      '.dbf-dialog{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;box-sizing:border-box;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;overscroll-behavior:contain;outline:none}',
+      '.dbf-dialog:focus,.dbf-dialog:focus-visible{outline:none}',
+      '.dbf-modal-open{scrollbar-width:none}',
+      '.dbf-modal-open ::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-dialog::backdrop{background:rgba(0,0,0,.45)}',
       '.dbf-modal-card{width:min(308px,100%);max-height:100%;overflow:auto;touch-action:auto;overscroll-behavior:contain;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)));background:var(--dsw-alias-bg-layer-1,Canvas);color:var(--dsw-alias-label-primary,CanvasText)}',
       '.dbf-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
@@ -609,6 +612,13 @@ window.__ModuleLoader__.load({
       // page header kept painting above the mask. showModal() moves the element
       // into the browser top layer, where the ::backdrop always covers the
       // whole viewport — no z-index can beat it.
+      useEffect(() => {
+        if (update === null || !updateOpen) return undefined;
+        const root = document.documentElement;
+        root.classList.add('dbf-modal-open');
+        return () => root.classList.remove('dbf-modal-open');
+      }, [update, updateOpen]);
+
       useEffect(() => {
         const element = modalRef.current;
         if (element === null || typeof element.showModal !== 'function' || element.open) return;
