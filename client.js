@@ -10,7 +10,7 @@
  * goes through the Client locale service so it follows the active language.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-balance-float',
+  id: '@lls-a1/dsh-balance-float',
   factory(require) {
     const React = require('react');
     // The shell keeps `shell.overlay` in a z-index:20 stacking context, so the
