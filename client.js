@@ -311,12 +311,12 @@ window.__ModuleLoader__.load({
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
       '.dbf-modal{position:fixed;top:0;right:0;bottom:0;left:0;height:100dvh;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.45);overscroll-behavior:contain;touch-action:none}',
-      '.dbf-dialog{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;box-sizing:border-box;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;overscroll-behavior:contain;outline:none}',
+      '.dbf-dialog{position:fixed;top:0;left:0;width:100vw;height:100dvh;min-width:100vw;min-height:100dvh;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;box-sizing:border-box;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;overscroll-behavior:contain;outline:none}',
       '.dbf-dialog:focus,.dbf-dialog:focus-visible{outline:none}',
       '.dbf-modal-open{scrollbar-width:none}',
       '.dbf-modal-open ::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-dialog::backdrop{background:rgba(0,0,0,.45)}',
-      '.dbf-modal-card{width:min(308px,100%);max-height:100%;overflow:auto;touch-action:auto;overscroll-behavior:contain;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)));background:var(--dsw-alias-bg-layer-1,Canvas);color:var(--dsw-alias-label-primary,CanvasText)}',
+      '.dbf-modal-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(308px,calc(100vw - 24px));margin:0;max-height:calc(100dvh - 24px);overflow:auto;touch-action:auto;overscroll-behavior:contain;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)));background:var(--dsw-alias-bg-layer-1,Canvas);color:var(--dsw-alias-label-primary,CanvasText)}',
       '.dbf-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
       '.dbf-modal-icon{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));color:var(--dsw-alias-brand-primary,#4d6bfe);font-size:12px;line-height:1}',
       '.dbf-modal-title{font-size:13px;font-weight:600}',
@@ -628,30 +628,6 @@ window.__ModuleLoader__.load({
           // already open or detached — nothing to do
         }
       });
-
-      /** Copy the install spec so the user can update from the plugin manager. */
-      const copyInstallSpec = useCallback(async () => {
-        const spec = NPM_SPEC;
-        try {
-          await navigator.clipboard.writeText(spec);
-        } catch {
-          const area = document.createElement('textarea');
-          area.value = spec;
-          area.style.position = 'fixed';
-          area.style.opacity = '0';
-          document.body.appendChild(area);
-          area.select();
-          try {
-            document.execCommand('copy');
-          } finally {
-            document.body.removeChild(area);
-          }
-        }
-        setCopied(true);
-        window.setTimeout(() => {
-          if (aliveRef.current) setCopied(false);
-        }, 2200);
-      }, [update]);
 
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
@@ -1769,7 +1745,9 @@ window.__ModuleLoader__.load({
         h('style', { key: 'css' }, STYLE),
         surface,
         bubble,
-        updateModal,
+        createPortal !== null && typeof document !== 'undefined' && updateModal !== null
+          ? createPortal(updateModal, document.body)
+          : updateModal,
       );
       return createPortal !== null && typeof document !== 'undefined' ? createPortal(tree, document.body) : tree;
     }
