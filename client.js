@@ -1357,7 +1357,7 @@ window.__ModuleLoader__.load({
         } else if (dayBlock !== null) {
           body.push(dayBlock);
         } else {
-          body.push(balanceBlock, tokenBlock, peakBlock, priceTable, historyBlock);
+          body.push(balanceBlock, peakBlock, tokenBlock, priceTable, historyBlock);
         }
 
         card = h(
