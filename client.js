@@ -13,6 +13,16 @@ window.__ModuleLoader__.load({
   id: 'dsh-balance-float',
   factory(require) {
     const React = require('react');
+    // The shell keeps `shell.overlay` in a z-index:20 stacking context, so the
+    // app header can still paint over us. A portal on <body> escapes it; if
+    // react-dom is not exposed to plugin bundles, fall back to in-place render.
+    let createPortal = null;
+    try {
+      const dom = require('react-dom');
+      if (dom !== null && typeof dom.createPortal === 'function') createPortal = dom.createPortal;
+    } catch {
+      createPortal = null;
+    }
     const { useCallback, useEffect, useRef, useState } = React;
     const h = React.createElement;
 
@@ -396,26 +406,6 @@ window.__ModuleLoader__.load({
       return out;
     }
 
-    /**
-     * Bottom edge of the app's pinned top bar. The overlay can live in a lower
-     * stacking context than the header, so keep the pill below it instead of
-     * relying on z-index alone.
-     */
-    function topBarBottom(ownRoot) {
-      const nodes = [];
-      // Whatever paints at the top-centre of the viewport is the top bar; the
-      // element query is the fallback for layouts that put something else there.
-      const probe = document.elementFromPoint(Math.round(window.innerWidth / 2), 2);
-      if (probe instanceof Element && !(ownRoot instanceof Element && ownRoot.contains(probe))) nodes.push(probe);
-      nodes.push(...document.querySelectorAll('header, [role="banner"]'));
-      let bottom = 0;
-      for (const node of nodes) {
-        const rect = node.getBoundingClientRect();
-        if (rect.height >= 24 && rect.width >= 200 && rect.top <= 8) bottom = Math.max(bottom, rect.bottom);
-      }
-      return bottom;
-    }
-
     /** Clamp a number. */
     function clamp(value, min, max) {
       return Math.min(Math.max(value, min), max);
@@ -688,7 +678,6 @@ window.__ModuleLoader__.load({
           height: rect.height,
           moved: false,
         };
-        drag.guardTop = Math.min(Math.max(4, topBarBottom(rootRef.current) + 4), Math.max(4, window.innerHeight - rect.height - 4));
         dragRef.current = drag;
         liveRef.current = { left: rect.left, top: rect.top };
         event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -703,11 +692,9 @@ window.__ModuleLoader__.load({
           drag.moved = true;
           const width = drag.width > 0 ? drag.width : 120;
           const height = drag.height > 0 ? drag.height : 40;
-          const minTop = Number.isFinite(drag.guardTop) ? drag.guardTop : 4;
-          const maxTop = Math.max(minTop, window.innerHeight - height - 4);
           const next = {
             left: clamp(drag.left + dx, 4, Math.max(4, window.innerWidth - width - 4)),
-            top: clamp(drag.top + dy, minTop, maxTop),
+            top: clamp(drag.top + dy, 4, Math.max(4, window.innerHeight - height - 4)),
           };
           positionRef.current = next;
           liveRef.current = next;
@@ -1154,13 +1141,14 @@ window.__ModuleLoader__.load({
 
       const surface = settingsOpen ? settingsPanel : open ? card : pill;
 
-      return h(
+      const tree = h(
         'div',
         { ref: rootRef, className: 'dbf-root dbf-dir-' + dir, style: surfaceStyle },
         h('style', { key: 'css' }, STYLE),
         surface,
         bubble,
       );
+      return createPortal !== null && typeof document !== 'undefined' ? createPortal(tree, document.body) : tree;
     }
 
     // Only `t` is consumed from the slot props: skip the re-renders the shell
