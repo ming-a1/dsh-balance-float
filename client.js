@@ -77,7 +77,7 @@ window.__ModuleLoader__.load({
       'tokens.cache': '缓存读取',
       'tokens.output': '输出',
       'tokens.total': '合计',
-      'tokens.hit': '缓存命中 {rate}',
+      'tokens.hit': '缓存命中',
       'tokens.empty': '分项从本版本开始记录，历史事件只有合计',
       'day.back': '← 返回',
       'day.title': '当日明细',
@@ -158,7 +158,7 @@ window.__ModuleLoader__.load({
       'tokens.cache': 'Cache read',
       'tokens.output': 'Output',
       'tokens.total': 'Total',
-      'tokens.hit': '{rate} cached',
+      'tokens.hit': 'Cache hit',
       'tokens.empty': 'Buckets are recorded from this version on; older events only carry the total',
       'day.back': '← Back',
       'day.title': 'Day detail',
@@ -269,6 +269,9 @@ window.__ModuleLoader__.load({
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
+      '.dbf-fold-head{cursor:pointer;user-select:none}',
+      '.dbf-fold-arrow{display:inline-block;width:10px;margin-right:3px;color:var(--dsw-alias-label-tertiary);font-size:9px}',
+      '.dbf-fold-head:hover .dbf-row-title{color:var(--dsw-alias-label-primary)}',
       '.dbf-token-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:1px 0}',
       '.dbf-models{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
       '.dbf-model-row{display:flex;align-items:baseline;gap:8px}',
@@ -533,6 +536,8 @@ window.__ModuleLoader__.load({
       const [hintOpen, setHintOpen] = useState(false);
       // A bar of the 7-day chart opens that day's detail view.
       const [selectedDay, setSelectedDay] = useState(null);
+      // Token buckets are collapsed until asked for.
+      const [tokensOpen, setTokensOpen] = useState(false);
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -646,6 +651,7 @@ window.__ModuleLoader__.load({
         setLeaving(true);
         setHintOpen(false);
         setSelectedDay(null);
+        setTokensOpen(false);
         leaveTimerRef.current = window.setTimeout(() => {
           leaveTimerRef.current = null;
           setLeaving(false);
@@ -1056,7 +1062,7 @@ window.__ModuleLoader__.load({
         const outputTokens = typeof snapshot?.todayOutput === 'number' ? snapshot.todayOutput : 0;
         const tokenSum = inputTokens + cacheTokens + outputTokens;
         const promptSum = inputTokens + cacheTokens;
-        const hitRate = promptSum > 0 ? Math.round((cacheTokens / promptSum) * 100) : null;
+        const hitRate = promptSum > 0 ? (cacheTokens / promptSum) * 100 : null;
         const tokenLine = (label, value) =>
           h(
             'div',
@@ -1069,15 +1075,38 @@ window.__ModuleLoader__.load({
           { className: 'dbf-block' },
           h(
             'div',
-            { className: 'dbf-row' },
-            h('span', { className: 'dbf-row-title' }, t('tokens.title')),
-            hitRate === null ? null : h('span', { className: 'dbf-sub' }, t('tokens.hit', { rate: hitRate + '%' })),
+            {
+              className: 'dbf-row dbf-fold-head',
+              role: 'button',
+              tabIndex: 0,
+              'aria-expanded': tokensOpen ? 'true' : 'false',
+              onClick: () => setTokensOpen((value) => !value),
+              onKeyDown: (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setTokensOpen((value) => !value);
+                }
+              },
+            },
+            h(
+              'span',
+              { className: 'dbf-row-title' },
+              h('span', { className: 'dbf-fold-arrow', 'aria-hidden': true }, tokensOpen ? '▾' : '▸'),
+              t('tokens.title'),
+            ),
+            h('span', { className: 'dbf-sub' }, tokens(tokenSum)),
           ),
-          tokenLine(t('tokens.input'), tokens(inputTokens)),
-          tokenLine(t('tokens.cache'), tokens(cacheTokens)),
-          tokenLine(t('tokens.output'), tokens(outputTokens)),
-          tokenLine(t('tokens.total'), tokens(tokenSum)),
-          tokenSum > 0 ? null : h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('tokens.empty')),
+          tokensOpen
+            ? h(
+                'div',
+                null,
+                tokenLine(t('tokens.hit'), hitRate === null ? '—' : hitRate.toFixed(1) + '%'),
+                tokenLine(t('tokens.input'), tokens(inputTokens)),
+                tokenLine(t('tokens.cache'), tokens(cacheTokens)),
+                tokenLine(t('tokens.output'), tokens(outputTokens)),
+                tokenSum > 0 ? null : h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('tokens.empty')),
+              )
+            : null,
         );
 
         const peakBlock = h(
@@ -1268,6 +1297,18 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'dbf-token-row', style: { marginTop: '6px', borderTop: '0.5px solid var(--dsw-alias-border-l1)', paddingTop: '5px' } },
+                  h('span', { className: 'dbf-sub' }, t('tokens.hit')),
+                  h(
+                    'span',
+                    { className: 'dbf-num' },
+                    (Number(selected.input) || 0) + (Number(selected.cacheRead) || 0) > 0
+                      ? (((Number(selected.cacheRead) || 0) / ((Number(selected.input) || 0) + (Number(selected.cacheRead) || 0))) * 100).toFixed(1) + '%'
+                      : '—',
+                  ),
+                ),
+                h(
+                  'div',
+                  { className: 'dbf-token-row' },
                   h('span', { className: 'dbf-sub' }, t('tokens.input')),
                   h('span', { className: 'dbf-num' }, tokens(selected.input ?? 0)),
                 ),
