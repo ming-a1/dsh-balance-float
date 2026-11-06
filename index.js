@@ -465,6 +465,17 @@ export function apply(ctx, config) {
                 }
                 const sample = urls.filter((url) => typeof url === 'string' && url.includes('balance-float')).slice(0, 2).join(' ')
                 noteReload(`bust=${busted}/${urls.length} ${sample}`)
+                // Re-publish the client bundle: the browser bundle URL carries a
+                // rev derived from the file, and without this the boot graph keeps
+                // the old rev (the pill silently disappears after the update).
+                let rebuiltRev = 'none'
+                try {
+                  const modules = ctx.get('modules')
+                  if (typeof modules?.rebuilt === 'function') rebuiltRev = modules.rebuilt('dsh-balance-float') ?? 'none'
+                } catch (error) {
+                  rebuiltRev = `error:${error instanceof Error ? error.message : String(error)}`
+                }
+                noteReload(`rebuilt=${rebuiltRev}`)
                 await entry.fiber?.dispose?.()
                 // Entry.refresh() returns early while `fiber` still points at the
                 // disposed instance, so clear it and re-init explicitly.
