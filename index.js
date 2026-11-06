@@ -450,8 +450,7 @@ export function apply(ctx, config) {
               try {
                 const loader = ctx.get('loader')
                 const entries = loader === undefined || typeof loader.entries !== 'function' ? [] : [...loader.entries()]
-                const ids = entries.map((row) => row.id ?? row.options?.id ?? '?')
-                noteReload(`entries=${ids.length} ids=${ids.join(',')}`)
+                noteReload(`entries=${entries.length}`)
                 const entry = entries.find(
                   (row) =>
                     (row.id ?? row.options?.id) === ENTRY_ID ||
