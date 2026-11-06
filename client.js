@@ -30,6 +30,9 @@ window.__ModuleLoader__.load({
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
     const NPM_SPEC = '@lls-a1/dsh-balance-float';
+    // Native modal support decides whether the mask lives in the top layer.
+    const DIALOG_OK =
+      typeof document !== 'undefined' && typeof document.createElement('dialog').showModal === 'function';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -308,6 +311,8 @@ window.__ModuleLoader__.load({
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
       '.dbf-modal{position:fixed;top:0;right:0;bottom:0;left:0;height:100dvh;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.45);overscroll-behavior:contain;touch-action:none}',
+      '.dbf-dialog{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:auto;overscroll-behavior:contain}',
+      '.dbf-dialog::backdrop{background:rgba(0,0,0,.45)}',
       '.dbf-modal-card{width:min(308px,100%);max-height:100%;overflow:auto;touch-action:auto;overscroll-behavior:contain;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)));background:var(--dsw-alias-bg-layer-1,Canvas);color:var(--dsw-alias-label-primary,CanvasText)}',
       '.dbf-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
       '.dbf-modal-icon{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));color:var(--dsw-alias-brand-primary,#4d6bfe);font-size:12px;line-height:1}',
@@ -598,6 +603,21 @@ window.__ModuleLoader__.load({
       const [updateOpen, setUpdateOpen] = useState(shared.updateOpen);
       const updateCheckedAt = useRef(0);
       const [copied, setCopied] = useState(false);
+      const modalRef = useRef(null);
+
+      // A plain fixed <div> stays inside the shell's stacking context, so the
+      // page header kept painting above the mask. showModal() moves the element
+      // into the browser top layer, where the ::backdrop always covers the
+      // whole viewport — no z-index can beat it.
+      useEffect(() => {
+        const element = modalRef.current;
+        if (element === null || typeof element.showModal !== 'function' || element.open) return;
+        try {
+          element.showModal();
+        } catch {
+          // already open or detached — nothing to do
+        }
+      });
 
       /** Copy the install spec so the user can update from the plugin manager. */
       const copyInstallSpec = useCallback(async () => {
@@ -1635,12 +1655,17 @@ window.__ModuleLoader__.load({
         update === null || !updateOpen
           ? null
           : h(
-              'div',
+              DIALOG_OK ? 'dialog' : 'div',
               {
-                className: 'dbf-modal',
+                ref: DIALOG_OK ? modalRef : undefined,
+                className: DIALOG_OK ? 'dbf-dialog' : 'dbf-modal',
                 role: 'dialog',
                 'aria-modal': 'true',
                 'aria-label': t('update.title'),
+                onCancel: (event) => {
+                  event.preventDefault();
+                  setUpdateOpen(false);
+                },
                 onClick: (event) => {
                   if (event.target === event.currentTarget) setUpdateOpen(false);
                 },
