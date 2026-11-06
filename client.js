@@ -72,6 +72,17 @@ window.__ModuleLoader__.load({
       'peak.label': '峰价',
       valley: '谷价',
       'schedule.title': '峰谷计费时段',
+      'day.back': '← 返回',
+      'day.title': '当日明细',
+      'day.calls': '{count} 次调用 · {tokens} tokens',
+      'day.empty': '该日没有可用明细（事件已滚动出账本）',
+      'weekday.0': '周日',
+      'weekday.1': '周一',
+      'weekday.2': '周二',
+      'weekday.3': '周三',
+      'weekday.4': '周四',
+      'weekday.5': '周五',
+      'weekday.6': '周六',
       'rule.peak': '峰',
       'rule.valley': '谷',
       'schedule.peak': '周一至周五 09:00–12:00、14:00–18:00',
@@ -135,6 +146,17 @@ window.__ModuleLoader__.load({
       'peak.label': 'Peak',
       valley: 'Off-peak',
       'schedule.title': 'Peak and off-peak windows',
+      'day.back': '← Back',
+      'day.title': 'Day detail',
+      'day.calls': '{count} calls · {tokens} tokens',
+      'day.empty': 'No detail for this day (events rolled out of the ledger)',
+      'weekday.0': 'Sun',
+      'weekday.1': 'Mon',
+      'weekday.2': 'Tue',
+      'weekday.3': 'Wed',
+      'weekday.4': 'Thu',
+      'weekday.5': 'Fri',
+      'weekday.6': 'Sat',
       'rule.peak': 'Peak',
       'rule.valley': 'Off-peak',
       'schedule.peak': 'Mon–Fri 09:00–12:00, 14:00–18:00',
@@ -233,6 +255,10 @@ window.__ModuleLoader__.load({
       '.dbf-topup:hover{background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-overlay));border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
+      '.dbf-models{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
+      '.dbf-model-row{display:flex;align-items:baseline;gap:8px}',
+      '.dbf-model-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}',
+      '.dbf-bar{cursor:pointer}',
       '.dbf-help{flex:none;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;padding:0;border-radius:50%;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:transparent;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:1;font-weight:600;cursor:pointer}',
       '.dbf-help:hover,.dbf-help.is-open{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-hint{margin-top:6px;padding:7px 9px;border-radius:8px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));display:flex;flex-direction:column;gap:3px}',
@@ -490,6 +516,8 @@ window.__ModuleLoader__.load({
       const [bubbleUp, setBubbleUp] = useState(false);
       // «?» next to the current billing period: reveals the peak/valley windows.
       const [hintOpen, setHintOpen] = useState(false);
+      // A bar of the 7-day chart opens that day's detail view.
+      const [selectedDay, setSelectedDay] = useState(null);
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -602,6 +630,7 @@ window.__ModuleLoader__.load({
         if (leaveTimerRef.current !== null) return;
         setLeaving(true);
         setHintOpen(false);
+        setSelectedDay(null);
         leaveTimerRef.current = window.setTimeout(() => {
           leaveTimerRef.current = null;
           setLeaving(false);
@@ -1136,13 +1165,78 @@ window.__ModuleLoader__.load({
               const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
               return h(
                 'div',
-                { key: row.day, className: 'dbf-bar' + (isToday ? ' is-today' : ''), title: row.day + ' ¥' + money(value) },
+                {
+                  key: row.day,
+                  className: 'dbf-bar' + (isToday ? ' is-today' : ''),
+                  role: 'button',
+                  tabIndex: 0,
+                  title: row.day + ' ¥' + money(value),
+                  onClick: () => setSelectedDay(row.day),
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedDay(row.day);
+                    }
+                  },
+                },
                 h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
                 h('div', { className: 'dbf-bar-day' }, row.day.slice(5)),
               );
             }),
           ),
         );
+
+        const selected = selectedDay === null ? null : history.find((row) => row.day === selectedDay) ?? null;
+        const dayBlock =
+          selected === null
+            ? null
+            : h(
+                'div',
+                { className: 'dbf-block' },
+                h(
+                  'div',
+                  { className: 'dbf-row' },
+                  h(
+                    'button',
+                    { type: 'button', className: 'dbf-textbtn', onClick: () => setSelectedDay(null) },
+                    t('day.back'),
+                  ),
+                  h('span', { className: 'dbf-sub' }, t('day.title')),
+                ),
+                h('div', { className: 'dbf-balance', style: { marginTop: '4px' } }, '¥' + money(selected.cost)),
+                h(
+                  'div',
+                  { className: 'dbf-sub' },
+                  selected.day + ' ' + t('weekday.' + new Date(selected.day + 'T00:00:00Z').getUTCDay()),
+                ),
+                h(
+                  'div',
+                  { className: 'dbf-sub', style: { marginTop: '2px' } },
+                  t('day.calls', { count: selected.calls ?? 0, tokens: tokens(selected.tokens ?? 0) }),
+                ),
+                typeof selected.peakCost === 'number' || typeof selected.valleyCost === 'number'
+                  ? h(
+                      'div',
+                      { className: 'dbf-sub', style: { marginTop: '1px' } },
+                      t('today.split', { peak: '¥' + money(selected.peakCost), valley: '¥' + money(selected.valleyCost) }),
+                    )
+                  : null,
+                (selected.models ?? []).length === 0
+                  ? h('div', { className: 'dbf-sub', style: { marginTop: '6px' } }, t('day.empty'))
+                  : h(
+                      'div',
+                      { className: 'dbf-models' },
+                      (selected.models ?? []).map((model) =>
+                        h(
+                          'div',
+                          { key: model.model, className: 'dbf-model-row' },
+                          h('span', { className: 'dbf-model-name', title: model.model }, model.model),
+                          h('span', { className: 'dbf-sub' }, tokens(model.tokens)),
+                          h('span', { className: 'dbf-num' }, '¥' + money(model.cost)),
+                        ),
+                      ),
+                    ),
+              );
 
         const footer = h(
           'div',
@@ -1167,6 +1261,8 @@ window.__ModuleLoader__.load({
           );
         } else if (snapshot !== null && snapshot.ok === false) {
           body.push(h('div', { className: 'dbf-block dbf-error' }, t('error.noLedger')));
+        } else if (dayBlock !== null) {
+          body.push(dayBlock);
         } else {
           body.push(balanceBlock, peakBlock, priceTable, historyBlock);
         }
