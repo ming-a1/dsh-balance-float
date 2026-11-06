@@ -16,7 +16,7 @@
  * nothing is logged about it.
  */
 import { execFile } from 'node:child_process'
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -420,6 +420,17 @@ export function apply(ctx, config) {
           // Answer first, then dispose/re-init this very row: the response must
           // be flushed before the fiber that owns this handler goes away.
           respondJson(res, 202, { ok: true })
+          // A small breadcrumb next to the ledger tells us whether the row
+          // really came back after a self-reload.
+          const logPath = path.join(path.dirname(paths.store), 'reload.log')
+          const note = (line) => {
+            try {
+              appendFileSync(logPath, `${new Date().toISOString()} ${line}\n`)
+            } catch {
+              // diagnostics only
+            }
+          }
+          note(`start host=${BOOT_VERSION} disk=${packageVersion()}`)
           setTimeout(() => {
             void (async () => {
               try {
@@ -432,7 +443,9 @@ export function apply(ctx, config) {
                 }
                 await entry.fiber?.dispose?.()
                 await entry.refresh?.()
+                note('done')
               } catch (error) {
+                note(`failed ${error instanceof Error ? error.message : String(error)}`)
                 ctx.logger?.warn?.(`balance-float: self reload failed: ${error instanceof Error ? error.message : String(error)}`)
               }
             })()
