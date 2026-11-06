@@ -67,10 +67,12 @@ const UPDATE_TTL_MS = 5 * 60 * 1000
 // locally bumped version never reports the value cached minutes ago.
 let updateCache = { at: 0, latest: null }
 
-async function checkUpdate() {
+async function checkUpdate({ fresh = false } = {}) {
   const now = Date.now()
   const current = packageVersion()
-  if (updateCache.latest !== null && now - updateCache.at < UPDATE_TTL_MS) {
+  // A manual click must never be answered from the cache: the published version
+  // can change right after a silent check.
+  if (!fresh && updateCache.latest !== null && now - updateCache.at < UPDATE_TTL_MS) {
     return { ok: true, current, latest: updateCache.latest, hasUpdate: isNewer(updateCache.latest, current) }
   }
   const controller = new AbortController()
@@ -340,7 +342,8 @@ export function apply(ctx, config) {
             return
           }
           try {
-            respondJson(res, 200, await checkUpdate())
+            const fresh = new URL(req.url ?? '/', 'http://localhost').searchParams.get('fresh') === '1'
+            respondJson(res, 200, await checkUpdate({ fresh }))
           } catch (error) {
             ctx.logger?.warn?.(`balance-float: update check failed: ${error instanceof Error ? error.message : String(error)}`)
             respondJson(res, 500, { ok: false, error: 'update check failed' })

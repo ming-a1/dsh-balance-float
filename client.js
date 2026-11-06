@@ -776,11 +776,12 @@ window.__ModuleLoader__.load({
 
       /** Ask the Host whether a newer published version exists. */
       const checkUpdate = useCallback(async (showModal) => {
+        const manual = showModal === true;
         if (showModal) setUpdateOpen(true);
         setUpdate({ phase: 'checking', latest: '', current: '', hasUpdate: false, error: '' });
         updateCheckedAt.current = Date.now();
         try {
-          const response = await fetch(ROUTE_UPDATE, { headers: { accept: 'application/json' }, cache: 'no-store' });
+          const response = await fetch(ROUTE_UPDATE + (manual ? '?fresh=1' : ''), { headers: { accept: 'application/json' }, cache: 'no-store' });
           const body = await response.json();
           if (!aliveRef.current) return;
           if (!response.ok || body?.ok === false) {
