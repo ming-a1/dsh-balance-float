@@ -214,8 +214,9 @@ window.__ModuleLoader__.load({
       '.dbf-body{display:flex;flex-direction:column;gap:0;flex:1 1 auto;min-height:0;max-height:62vh;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;touch-action:auto;overscroll-behavior:contain}',
       '.dbf-body::-webkit-scrollbar{width:0;height:0;display:none}',
       '.dbf-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
-      '.dbf-pill.is-ball{width:46px;height:46px;padding:0 3px;justify-content:center;gap:0;font-size:13px;line-height:16px;overflow:hidden}',
+      '.dbf-pill.is-ball{width:46px;height:46px;box-sizing:border-box;padding:0 2px;justify-content:center;gap:0;font-size:13px;line-height:16px;overflow:hidden}',
       '.dbf-pill.is-ball .dbf-num{font-size:13px;font-weight:600;letter-spacing:-.01em}',
+      '.dbf-pill.is-ball .dbf-num.is-compact{font-size:11px}',
       '.dbf-bubble.is-side{animation-name:dbf-flash-side}',
       '.dbf-bubble.is-right-of{top:50%;left:calc(100% + 8px);right:auto;bottom:auto;transform:translateY(-50%)}',
       '.dbf-bubble.is-left-of{top:50%;right:calc(100% + 8px);left:auto;bottom:auto;transform:translateY(-50%)}',
@@ -870,6 +871,7 @@ window.__ModuleLoader__.load({
 
       // Docked to a side edge: a square ball that only shows the balance.
       const docked = appearance.dockBall && dock !== '';
+      const balanceText = '¥' + money(snapshot?.balance);
       const pillProps = {
         key: 'pill',
         className: 'dbf-pill dbf-surface' + (docked ? ' is-ball' : ''),
@@ -887,7 +889,7 @@ window.__ModuleLoader__.load({
         },
       };
       const pill = docked
-        ? h('div', pillProps, h('span', { className: 'dbf-num' }, '¥' + money(snapshot?.balance)))
+        ? h('div', pillProps, h('span', { className: 'dbf-num' + (balanceText.length > 6 ? ' is-compact' : '') }, balanceText))
         : h(
         'div',
         pillProps,
