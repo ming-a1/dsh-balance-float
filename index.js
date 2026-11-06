@@ -499,16 +499,24 @@ export function apply(ctx, config) {
                   rebuiltRev = `error:${error instanceof Error ? error.message : String(error)}`
                 }
                 noteReload(`rebuilt=${rebuiltRev}`)
-                await entry.fiber?.dispose?.()
-                // Entry.refresh() returns early while `fiber` still points at the
-                // disposed instance, so clear it and re-init explicitly.
-                try {
-                  entry.fiber = undefined
-                } catch {
-                  // frozen entry: fall through to refresh
+                // The manager's reload goes through hmr.reconcileProfile, which
+                // also rebuilds the *client* graph. A bare dispose+init of this
+                // fiber kept the host alive but dropped the client entry, so the
+                // pill vanished after the page reload.
+                const manager = ctx.get('pluginManager')
+                if (typeof manager?.reload === 'function') {
+                  const outcome = await manager.reload([])
+                  noteReload(`manager-reload restart=${outcome?.restartReason ?? 'none'} warnings=${(outcome?.warnings ?? []).length}`)
+                } else {
+                  await entry.fiber?.dispose?.()
+                  try {
+                    entry.fiber = undefined
+                  } catch {
+                    // frozen entry: fall through to refresh
+                  }
+                  if (typeof entry.init === 'function') await entry.init()
+                  else await entry.refresh?.()
                 }
-                if (typeof entry.init === 'function') await entry.init()
-                else await entry.refresh?.()
                 noteReload('done')
               } catch (error) {
                 noteReload(`failed ${error instanceof Error ? error.message : String(error)}`)
