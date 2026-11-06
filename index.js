@@ -466,7 +466,15 @@ export function apply(ctx, config) {
                 const sample = urls.filter((url) => typeof url === 'string' && url.includes('balance-float')).slice(0, 2).join(' ')
                 noteReload(`bust=${busted}/${urls.length} ${sample}`)
                 await entry.fiber?.dispose?.()
-                await entry.refresh?.()
+                // Entry.refresh() returns early while `fiber` still points at the
+                // disposed instance, so clear it and re-init explicitly.
+                try {
+                  entry.fiber = undefined
+                } catch {
+                  // frozen entry: fall through to refresh
+                }
+                if (typeof entry.init === 'function') await entry.init()
+                else await entry.refresh?.()
                 noteReload('done')
               } catch (error) {
                 noteReload(`failed ${error instanceof Error ? error.message : String(error)}`)
