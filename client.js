@@ -137,6 +137,7 @@ window.__ModuleLoader__.load({
       expand: '展开',
       'error.noLedger': '未找到本地用量账本',
       'error.fetch': '读取失败',
+      'error.hostStale': 'Host 仍运行 v{host} 的代码（磁盘已是 v{file}），请重启 dsh web。',
       'error.stale': '账本不是今天的数据',
       settings: '外观设置',
       'settings.open': '外观设置',
@@ -237,6 +238,7 @@ window.__ModuleLoader__.load({
       expand: 'Expand',
       'error.noLedger': 'No local usage ledger found',
       'error.fetch': 'Could not load the snapshot',
+      'error.hostStale': 'The host still runs v{host} while the files are v{file} — restart dsh web.',
       'error.stale': 'The ledger is not from today',
       settings: 'Appearance',
       'settings.open': 'Appearance',
@@ -1223,6 +1225,15 @@ window.__ModuleLoader__.load({
               : t('turn.meta', { time: clock(turn.at), tokens: tokens(turn.tokens) }),
           ),
           stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
+          typeof snapshot?.hostVersion === 'string' &&
+          snapshot.hostVersion !== '' &&
+          snapshot.hostVersion !== snapshot?.version
+            ? h(
+                'div',
+                { className: 'dbf-error', style: { marginTop: '4px' } },
+                t('error.hostStale', { host: snapshot.hostVersion, file: snapshot.version }),
+              )
+            : null,
         );
 
         const inputTokens = typeof snapshot?.todayInput === 'number' ? snapshot.todayInput : 0;

@@ -166,6 +166,9 @@ async function runUpdate() {
   }
 }
 
+/** Version of the code loaded into this process (differs from disk after an in-place update). */
+const BOOT_VERSION = packageVersion()
+
 export const name = 'balance-float'
 
 /** Services this plugin cannot work without (`credentials` is read optionally). */
@@ -315,6 +318,7 @@ export function apply(ctx, config) {
               mtimeMs: tracker.lastSavedAt > 0 ? tracker.lastSavedAt : seededAt,
               serverNow: Date.now(),
               version: packageVersion(),
+              hostVersion: BOOT_VERSION,
             })
             respondJson(res, 200, snapshot)
           } catch (error) {
