@@ -794,6 +794,9 @@ window.__ModuleLoader__.load({
       }, [open, update, snapshot?.version, checkUpdate]);
 
       const load = useCallback(async (manual) => {
+        // Hold the spinner for at least one full turn: a local read returns in
+        // a few milliseconds, which otherwise looks like nothing happened.
+        const startedAt = Date.now();
         if (manual) setBusy(true);
         try {
           const response = await fetch(ROUTE, { headers: { accept: 'application/json' }, cache: 'no-store' });
@@ -818,7 +821,11 @@ window.__ModuleLoader__.load({
           if (!aliveRef.current) return;
           setFailure(error instanceof Error && error.message !== '' ? error.message : String(error));
         } finally {
-          if (manual && aliveRef.current) setBusy(false);
+          if (manual && aliveRef.current) {
+            const elapsed = Date.now() - startedAt;
+            if (elapsed < 700) await new Promise((resolve) => window.setTimeout(resolve, 700 - elapsed));
+            if (aliveRef.current) setBusy(false);
+          }
         }
       }, []);
 
