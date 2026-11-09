@@ -273,7 +273,7 @@ window.__ModuleLoader__.load({
       '.dbf-dot.is-peak{background:var(--dsw-alias-state-error-primary)}',
       '.dbf-dot.is-valley{background:var(--dsw-alias-state-success-primary)}',
       '.dbf-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}',
-      '.dbf-card{width:316px;border-radius:calc(var(--dbf-radius,16) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
+      '.dbf-card{user-select:none;-webkit-user-select:none;width:316px;border-radius:calc(var(--dbf-radius,16) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card{animation-name:dbf-open-up}',
       '.dbf-head{display:flex;align-items:center;gap:8px;padding:9px 11px;background:transparent;border-bottom:.5px solid var(--dsw-alias-border-l1);cursor:grab;user-select:none;touch-action:none}',
       '.dbf-head.is-static{cursor:default}',
@@ -382,7 +382,7 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-flash-up{0%{opacity:0;transform:translateY(4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(2px)}}',
       '.dbf-setting{padding:8px 11px;border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '.dbf-setting:last-child{border-bottom:0}',
-      '.dbf-track{position:relative;height:26px;margin:2px 7px 0;cursor:pointer;touch-action:none;border-radius:6px}',
+      '.dbf-track{position:relative;height:26px;margin:2px 7px 0;cursor:pointer;touch-action:none;border-radius:6px;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}',
       '.dbf-track:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#4d6bfe);outline-offset:2px}',
       '.dbf-track-rail{position:absolute;left:0;right:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-border-l1)}',
       '.dbf-track-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe)}',
@@ -885,14 +885,36 @@ window.__ModuleLoader__.load({
        */
       const startSlider = useCallback(
         (key, max, event) => {
+          // The card is normal selectable text. Without this, sweeping the
+          // track selects the labels and the next press starts a native text
+          // drag, which stops delivering pointer events to the track (the
+          // cursor turns into "not allowed") until the selection is cleared.
+          if (event.cancelable) event.preventDefault();
           const track = event.currentTarget;
+          track.focus?.({ preventScroll: true });
           const rect = track.getBoundingClientRect();
           const apply = (clientX) => {
             const ratio = clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
             changeAppearance(key, clamp(Math.round((ratio * max) / 5) * 5, 0, max));
           };
           apply(event.clientX);
-          track.setPointerCapture?.(event.pointerId);
+
+          let released = false;
+          const releaseCapture = () => {
+            if (released) return;
+            released = true;
+            try {
+              if (track.hasPointerCapture?.(event.pointerId) === true) track.releasePointerCapture(event.pointerId);
+            } catch {
+              // The capture is already gone; nothing to release.
+            }
+          };
+          try {
+            track.setPointerCapture?.(event.pointerId);
+          } catch {
+            // A pointer that already ended cannot be captured.
+          }
+
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
             moveEvent.stopImmediatePropagation();
@@ -908,16 +930,23 @@ window.__ModuleLoader__.load({
             window.removeEventListener('pointerup', onEnd, true);
             window.removeEventListener('pointercancel', onEnd, true);
             window.removeEventListener('touchmove', onTouch, true);
+            track.removeEventListener('lostpointercapture', onLost);
+            releaseCapture();
           };
           const onEnd = (endEvent) => {
             if (endEvent.pointerId !== event.pointerId) return;
             endEvent.stopImmediatePropagation();
             detach();
           };
+          // Losing capture (element re-render, browser gesture) must end the
+          // drag too, or the window listeners outlive the gesture.
+          const onLost = () => detach();
+
           window.addEventListener('pointermove', onMove, true);
           window.addEventListener('pointerup', onEnd, true);
           window.addEventListener('pointercancel', onEnd, true);
           window.addEventListener('touchmove', onTouch, { capture: true, passive: false });
+          track.addEventListener('lostpointercapture', onLost);
         },
         [changeAppearance],
       );
