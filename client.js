@@ -885,13 +885,10 @@ window.__ModuleLoader__.load({
        */
       const startSlider = useCallback(
         (key, max, event) => {
-          // The card is normal selectable text. Without this, sweeping the
-          // track selects the labels and the next press starts a native text
-          // drag, which stops delivering pointer events to the track (the
-          // cursor turns into "not allowed") until the selection is cleared.
-          if (event.cancelable) event.preventDefault();
+          // Text selection is already disabled in CSS (`user-select:none`), so
+          // the default action stays intact: a plain click still focuses the
+          // track and only a real pointer move starts a drag.
           const track = event.currentTarget;
-          track.focus?.({ preventScroll: true });
           const rect = track.getBoundingClientRect();
           const apply = (clientX) => {
             const ratio = clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
