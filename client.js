@@ -382,7 +382,7 @@ window.__ModuleLoader__.load({
       '@keyframes dbf-flash-up{0%{opacity:0;transform:translateY(4px)}12%{opacity:1;transform:translateY(0)}84%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(2px)}}',
       '.dbf-setting{padding:8px 11px;border-bottom:.5px solid var(--dsw-alias-border-l1)}',
       '.dbf-setting:last-child{border-bottom:0}',
-      '.dbf-track{position:relative;height:26px;margin:2px 0 0;cursor:pointer;touch-action:none;border-radius:6px}',
+      '.dbf-track{position:relative;height:26px;margin:2px 7px 0;cursor:pointer;touch-action:none;border-radius:6px}',
       '.dbf-track:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#4d6bfe);outline-offset:2px}',
       '.dbf-track-rail{position:absolute;left:0;right:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-border-l1)}',
       '.dbf-track-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe)}',
