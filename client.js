@@ -128,6 +128,9 @@ window.__ModuleLoader__.load({
       'update.retry': '点击重试',
       source: '本地账本',
       updated: '更新于 {time}',
+      refreshing: '正在刷新',
+      refreshDone: '刷新完成',
+      refreshFailedShort: '刷新失败',
       refresh: '刷新',
       loading: '读取中…',
       retry: '重试',
@@ -224,6 +227,9 @@ window.__ModuleLoader__.load({
       'update.retry': 'click to retry',
       source: 'Local ledger',
       updated: 'Updated {time}',
+      refreshing: 'Refreshing',
+      refreshDone: 'Refresh complete',
+      refreshFailedShort: 'Refresh failed',
       refresh: 'Refresh',
       loading: 'Reading…',
       retry: 'Retry',
@@ -372,6 +378,9 @@ window.__ModuleLoader__.load({
       '.dbf-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 11px;background:transparent;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:14px}',
       '.dbf-foot-path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dbf-foot-time{margin-left:auto;white-space:nowrap}',
+      '.dbf-foot-time.is-refreshing{color:var(--dsw-alias-state-warn-primary)}',
+      '.dbf-foot-time.is-done{color:var(--dsw-alias-state-success-primary)}',
+      '.dbf-foot-time.is-failed{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-bubble{position:absolute;top:calc(100% + 8px);left:4px;display:flex;align-items:baseline;gap:6px;padding:5px 12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,calc(.18 * var(--dbf-shadow,1)));font-size:13px;line-height:19px;white-space:nowrap;pointer-events:none;animation:dbf-flash 3s ease forwards}',
       '.dbf-bubble-label{color:var(--dsw-alias-label-secondary)}',
       '.dbf-bubble-amount{font-weight:600;font-variant-numeric:tabular-nums}',
@@ -580,6 +589,7 @@ window.__ModuleLoader__.load({
       const [snapshot, setSnapshot] = useState(null);
       const [failure, setFailure] = useState('');
       const [busy, setBusy] = useState(false);
+      const [refreshState, setRefreshState] = useState('idle');
       const [open, setOpen] = useState(false);
       const [settingsOpen, setSettingsOpen] = useState(false);
       const [leaving, setLeaving] = useState(false);
@@ -591,6 +601,7 @@ window.__ModuleLoader__.load({
       const dragRef = useRef(null);
       const positionRef = useRef(null);
       const aliveRef = useRef(true);
+      const refreshDoneTimer = useRef(null);
       // The per-turn bubble: one flash per settled turn, then it fades itself out.
       const [flash, setFlash] = useState(false);
       // The bubble sits under the pill; near the bottom edge it flips above.
@@ -797,7 +808,15 @@ window.__ModuleLoader__.load({
         // Hold the spinner for at least one full turn: a local read returns in
         // a few milliseconds, which otherwise looks like nothing happened.
         const startedAt = Date.now();
-        if (manual) setBusy(true);
+        let ok = true;
+        if (manual) {
+          if (refreshDoneTimer.current !== null) {
+            window.clearTimeout(refreshDoneTimer.current);
+            refreshDoneTimer.current = null;
+          }
+          setBusy(true);
+          setRefreshState('refreshing');
+        }
         try {
           const response = await fetch(ROUTE, { headers: { accept: 'application/json' }, cache: 'no-store' });
           const body = await response.json();
@@ -818,13 +837,21 @@ window.__ModuleLoader__.load({
             }, 3100);
           }
         } catch (error) {
+          ok = false;
           if (!aliveRef.current) return;
           setFailure(error instanceof Error && error.message !== '' ? error.message : String(error));
         } finally {
           if (manual && aliveRef.current) {
             const elapsed = Date.now() - startedAt;
             if (elapsed < 700) await new Promise((resolve) => window.setTimeout(resolve, 700 - elapsed));
-            if (aliveRef.current) setBusy(false);
+            if (aliveRef.current) {
+              setBusy(false);
+              setRefreshState(ok ? 'done' : 'failed');
+              refreshDoneTimer.current = window.setTimeout(() => {
+                refreshDoneTimer.current = null;
+                if (aliveRef.current) setRefreshState('idle');
+              }, 2000);
+            }
           }
         }
       }, []);
@@ -1523,7 +1550,19 @@ window.__ModuleLoader__.load({
             t('version') + ' v' + (snapshot?.version || '—'),
             h('span', { className: 'dbf-version-glyph', 'aria-hidden': true }, '↻'),
           ),
-          h('span', { className: 'dbf-foot-time' }, typeof snapshot?.source?.updatedAt === 'string' ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) }) : ''),
+          h(
+            'span',
+            { className: 'dbf-foot-time' + (refreshState !== 'idle' ? ' is-' + refreshState : '') },
+            refreshState === 'refreshing'
+              ? t('refreshing')
+              : refreshState === 'done'
+                ? t('refreshDone')
+                : refreshState === 'failed'
+                  ? t('refreshFailedShort')
+                  : typeof snapshot?.source?.updatedAt === 'string'
+                    ? t('updated', { time: clock(Date.parse(snapshot.source.updatedAt)) })
+                    : '',
+          ),
         );
 
         const body = [];
