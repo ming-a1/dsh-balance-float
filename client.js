@@ -27,12 +27,10 @@ window.__ModuleLoader__.load({
     const h = React.createElement;
 
     const NS = 'balance-float';
+    /** The published name DSH's plugin manager lists this bundle under. */
+    const PACKAGE_NAME = '@lls-a1/dsh-balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
-    const NPM_SPEC = '@lls-a1/dsh-balance-float';
-    // Native modal support decides whether the mask lives in the top layer.
-    const DIALOG_OK =
-      typeof document !== 'undefined' && typeof document.createElement('dialog').showModal === 'function';
     const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
@@ -112,20 +110,8 @@ window.__ModuleLoader__.load({
       history: '近 7 天',
       'history.total': '合计 {total}',
       version: '版本',
-      'update.check': '点击检查更新',
-      'update.title': '检查更新',
-      'update.checking': '正在检查…',
-      'update.failed': '检查失败',
-      'update.found': '发现新版本 v{latest}（当前 v{current}）',
-      'update.latest': '最新版本 v{current}',
-      'update.label.current': '当前',
-      'update.label.latest': '最新',
-      'update.now': '更新',
-      'update.copy': '复制安装链接',
-      'update.copied': '已复制 ✓',
-      'update.installHint': '复制后到插件管理器里粘贴安装（npm 包名，安装源可选用国内镜像）。',
-      'update.later': '稍后',
-      'update.retry': '点击重试',
+      'version.open': '打开插件页（更新在这里）',
+      'version.new': '发现新版本 v{latest}，点击打开插件页更新',
       source: '本地账本',
       updated: '更新于 {time}',
       refreshing: '正在刷新',
@@ -211,20 +197,8 @@ window.__ModuleLoader__.load({
       history: 'Last 7 days',
       'history.total': 'Total {total}',
       version: 'Version',
-      'update.check': 'Click to check for updates',
-      'update.title': 'Check for updates',
-      'update.checking': 'Checking…',
-      'update.failed': 'Update check failed',
-      'update.found': 'v{latest} is available (you have v{current})',
-      'update.latest': 'Latest version v{current}',
-      'update.label.current': 'Current',
-      'update.label.latest': 'Latest',
-      'update.now': 'Update',
-      'update.copy': 'Copy install spec',
-      'update.copied': 'Copied ✓',
-      'update.installHint': 'Paste this npm package name into the plugin manager to upgrade.',
-      'update.later': 'Later',
-      'update.retry': 'click to retry',
+      'version.open': 'Open the plugin page (updates live there)',
+      'version.new': 'v{latest} is available — click to open the plugin page',
       source: 'Local ledger',
       updated: 'Updated {time}',
       refreshing: 'Refreshing',
@@ -316,27 +290,6 @@ window.__ModuleLoader__.load({
       '.dbf-version-glyph{font-size:10px;opacity:.75}',
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
-      '.dbf-modal{position:fixed;top:0;right:0;bottom:0;left:0;height:100dvh;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.45);overscroll-behavior:contain;touch-action:none}',
-      '.dbf-dialog{position:fixed;top:0;left:0;width:100vw;height:100dvh;min-width:100vw;min-height:100dvh;max-width:none;max-height:none;margin:0;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));border:0;box-sizing:border-box;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;overflow:hidden;overscroll-behavior:contain;outline:none}',
-      '.dbf-dialog:focus,.dbf-dialog:focus-visible{outline:none}',
-      '.dbf-modal-open{scrollbar-width:none}',
-      '.dbf-modal-open ::-webkit-scrollbar{width:0;height:0;display:none}',
-      '.dbf-dialog::backdrop{background:rgba(0,0,0,.45)}',
-      '.dbf-modal-card{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(308px,calc(100vw - 24px));margin:0;max-height:calc(100dvh - 24px);overflow:auto;touch-action:auto;overscroll-behavior:contain;padding:16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,calc(.34 * var(--dbf-shadow,1)));background:var(--dsw-alias-bg-layer-1,Canvas);color:var(--dsw-alias-label-primary,CanvasText)}',
-      '.dbf-modal-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
-      '.dbf-modal-icon{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));color:var(--dsw-alias-brand-primary,#4d6bfe);font-size:12px;line-height:1}',
-      '.dbf-modal-title{font-size:13px;font-weight:600}',
-      '.dbf-modal-body{font-size:12px;line-height:18px}',
-      '.dbf-modal-note{margin-top:6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,currentColor);opacity:.85}',
-      '.dbf-modal-versions{display:flex;align-items:center;gap:8px;margin-top:8px}',
-      '.dbf-modal-version{display:flex;flex-direction:column;gap:1px;padding:4px 8px;border-radius:8px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay))}',
-      '.dbf-modal-version.is-new{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4d6bfe) 14%,transparent)}',
-      '.dbf-modal-version-label{font-size:10px;line-height:13px;color:var(--dsw-alias-label-secondary,currentColor);opacity:.8}',
-      '.dbf-modal-version-value{font-size:12px;line-height:17px;font-weight:600;font-variant-numeric:tabular-nums}',
-      '.dbf-modal-arrow{color:var(--dsw-alias-label-tertiary)}',
-      '.dbf-btn-primary{padding:4px 12px;border:0;border-radius:8px;background:var(--dsw-alias-label-primary,CanvasText);color:var(--dsw-alias-bg-base,Canvas);font:inherit;font-size:12px;font-weight:600;line-height:18px;cursor:pointer}',
-      '.dbf-btn-primary:hover{filter:brightness(1.06)}',
-      '.dbf-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}',
       '.dbf-fold-head{cursor:pointer;user-select:none}',
       '.dbf-fold-arrow{display:inline-block;width:10px;margin-right:3px;color:var(--dsw-alias-label-tertiary);font-size:9px}',
       '.dbf-fold-head:hover .dbf-row-title{color:var(--dsw-alias-label-primary)}',
@@ -581,11 +534,12 @@ window.__ModuleLoader__.load({
     // The shell can re-mount the overlay when a run starts or stops. Component
     // state is lost then, so the live position lives at module scope too: a
     // remount must not snap the widget back to the stored default.
-    const shared = { frame: null, dir: 'up', dock: '', update: null, updateOpen: false };
+    const shared = { frame: null, dir: 'up', dock: '' };
 
     /** The floating pill and its expanded card. */
     function BalanceFloat(props) {
       const t = props.t;
+      const openPluginPage = typeof props.openPluginPage === 'function' ? props.openPluginPage : () => {};
       const [snapshot, setSnapshot] = useState(null);
       const [failure, setFailure] = useState('');
       const [busy, setBusy] = useState(false);
@@ -612,34 +566,9 @@ window.__ModuleLoader__.load({
       const [selectedDay, setSelectedDay] = useState(null);
       // Token buckets are collapsed until asked for.
       const [tokensOpen, setTokensOpen] = useState(false);
-      // Update check: null | {phase, latest, current, hasUpdate, error}
-      const [update, setUpdate] = useState(shared.update);
-      const [updateOpen, setUpdateOpen] = useState(shared.updateOpen);
+      // Auto check: null | {phase, latest, current, hasUpdate}
+      const [update, setUpdate] = useState(null);
       const updateCheckedAt = useRef(0);
-      const [copied, setCopied] = useState(false);
-      const modalRef = useRef(null);
-
-      // A plain fixed <div> stays inside the shell's stacking context, so the
-      // page header kept painting above the mask. showModal() moves the element
-      // into the browser top layer, where the ::backdrop always covers the
-      // whole viewport — no z-index can beat it.
-      useEffect(() => {
-        if (update === null || !updateOpen) return undefined;
-        const root = document.documentElement;
-        root.classList.add('dbf-modal-open');
-        return () => root.classList.remove('dbf-modal-open');
-      }, [update, updateOpen]);
-
-      useEffect(() => {
-        const element = modalRef.current;
-        if (element === null || typeof element.showModal !== 'function' || element.open) return;
-        try {
-          element.showModal();
-        } catch {
-          // already open or detached — nothing to do
-        }
-      });
-
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -653,11 +582,6 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         shared.dock = dock;
       }, [dock]);
-      useEffect(() => {
-        shared.update = update;
-        shared.updateOpen = updateOpen;
-      }, [update, updateOpen]);
-
       // Forces a re-render so the countdown text follows the clock.
       const [, setTick] = useState(0);
       // Host/browser clock offset, so the switch countdown follows the Host.
@@ -766,43 +690,30 @@ window.__ModuleLoader__.load({
         }, 200);
       }, []);
 
-      /** Ask the Host whether a newer published version exists. */
-      const checkUpdate = useCallback(async (showModal) => {
-        const manual = showModal === true;
-        if (showModal) setUpdateOpen(true);
-        setUpdate({ phase: 'checking', latest: '', current: '', hasUpdate: false, error: '' });
-        updateCheckedAt.current = Date.now();
+      /** Silent check so the footer can flag a newer release before you click. */
+      const checkUpdate = useCallback(async () => {
+        updateCheckedAt.current = Date.now()
         try {
-          const response = await fetch(ROUTE_UPDATE + (manual ? '?fresh=1' : ''), { headers: { accept: 'application/json' }, cache: 'no-store' });
+          const response = await fetch(ROUTE_UPDATE, { headers: { accept: 'application/json' }, cache: 'no-store' });
           const body = await response.json();
           if (!aliveRef.current) return;
-          if (!response.ok || body?.ok === false) {
-            setUpdate({ phase: 'error', latest: '', current: body?.current ?? '', hasUpdate: false, error: body?.error ?? 'HTTP ' + response.status });
-            return;
-          }
+          if (!response.ok || body?.ok === false) return;
           setUpdate({
             phase: 'done',
             latest: typeof body.latest === 'string' ? body.latest : '',
             current: typeof body.current === 'string' ? body.current : '',
             hasUpdate: body.hasUpdate === true,
-            error: '',
           });
-        } catch (error) {
-          if (!aliveRef.current) return;
-          setUpdate({ phase: 'error', latest: '', current: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) });
+        } catch {
+          // Silent: a failed check must not disturb the widget.
         }
       }, []);
 
-      // Check quietly when the card opens so the hover text already knows, and
-      // re-check whenever the local version changed since the last answer.
       useEffect(() => {
         if (!open) return;
-        if (update !== null && update.phase === 'checking') return;
-        const version = snapshot?.version ?? '';
-        const answered = update !== null && update.phase !== 'checking' && (update.current || '') === version;
-        if (answered && Date.now() - updateCheckedAt.current < 5 * 60 * 1000) return;
-        void checkUpdate(false);
-      }, [open, update, snapshot?.version, checkUpdate]);
+        if (Date.now() - updateCheckedAt.current < 5 * 60 * 1000) return;
+        void checkUpdate();
+      }, [open, snapshot?.version, checkUpdate]);
 
       const load = useCallback(async (manual) => {
         // Hold the spinner for at least one full turn: a local read returns in
@@ -1119,18 +1030,6 @@ window.__ModuleLoader__.load({
       };
 
       const dot = h('span', { className: 'dbf-dot ' + (peakActive ? 'is-peak' : 'is-valley'), 'aria-hidden': true });
-
-      // The version control's hover text reports the last check's outcome.
-      const updateTitle =
-        update === null
-          ? t('update.check')
-          : update.phase === 'checking'
-            ? t('update.checking')
-          : update.phase === 'error'
-            ? t('update.failed') + ' · ' + t('update.retry')
-            : update.hasUpdate
-              ? t('update.found', { latest: update.latest, current: update.current }) + ' · ' + t('update.now')
-              : t('update.latest', { current: update.current || snapshot?.version || '—' });
 
       // Docked to a side edge: a square ball that only shows the balance.
       const docked = appearance.dockBall && dock !== '';
@@ -1543,12 +1442,15 @@ window.__ModuleLoader__.load({
             'button',
             {
               type: 'button',
-              className: 'dbf-version' + (update !== null && update.phase === 'done' && update.hasUpdate ? ' has-update' : ''),
-              title: updateTitle,
-              onClick: () => void checkUpdate(true),
+              className: 'dbf-version' + (update !== null && update.hasUpdate ? ' has-update' : ''),
+              title:
+                update !== null && update.hasUpdate
+                  ? t('version.new', { latest: update.latest })
+                  : t('version.open'),
+              onClick: () => openPluginPage(),
             },
             t('version') + ' v' + (snapshot?.version || '—'),
-            h('span', { className: 'dbf-version-glyph', 'aria-hidden': true }, '↻'),
+            h('span', { className: 'dbf-version-glyph', 'aria-hidden': true }, '↗'),
           ),
           h(
             'span',
@@ -1709,106 +1611,6 @@ window.__ModuleLoader__.load({
             )
           : null;
 
-      const updateModal =
-        update === null || !updateOpen
-          ? null
-          : h(
-              DIALOG_OK ? 'dialog' : 'div',
-              {
-                ref: DIALOG_OK ? modalRef : undefined,
-                className: DIALOG_OK ? 'dbf-dialog' : 'dbf-modal',
-                role: 'dialog',
-                'aria-modal': 'true',
-                'aria-label': t('update.title'),
-                onCancel: (event) => {
-                  event.preventDefault();
-                  setUpdateOpen(false);
-                },
-                onClick: (event) => {
-                  if (event.target === event.currentTarget) setUpdateOpen(false);
-                },
-              },
-              h(
-                'div',
-                { className: 'dbf-modal-card dbf-surface' },
-                h(
-                  'div',
-                  { className: 'dbf-modal-head' },
-                  h('span', { className: 'dbf-modal-icon', 'aria-hidden': true }, '⟳'),
-                  h('span', { className: 'dbf-modal-title' }, t('update.title')),
-                ),
-                update.phase === 'checking'
-                  ? h('div', { className: 'dbf-modal-body' }, t('update.checking'))
-                  : update.phase === 'error'
-                    ? h(
-                        'div',
-                        null,
-                        h('div', { className: 'dbf-modal-body dbf-error' }, t('update.failed') + ': ' + update.error),
-                        h(
-                          'div',
-                          { className: 'dbf-modal-actions' },
-                          h(
-                            'button',
-                            { type: 'button', className: 'dbf-btn-primary', onClick: () => void checkUpdate(true) },
-                            t('update.retry'),
-                          ),
-                        ),
-                      )
-                    : update.hasUpdate
-                      ? h(
-                          'div',
-                          null,
-                          h('div', { className: 'dbf-modal-body' }, t('update.found', { latest: update.latest, current: update.current })),
-                          h(
-                            'div',
-                            { className: 'dbf-modal-versions' },
-                            h(
-                              'span',
-                              { className: 'dbf-modal-version' },
-                              h('span', { className: 'dbf-modal-version-label' }, t('update.label.current')),
-                              h('span', { className: 'dbf-modal-version-value' }, 'v' + (update.current || '—')),
-                            ),
-                            h('span', { className: 'dbf-modal-arrow', 'aria-hidden': true }, '→'),
-                            h(
-                              'span',
-                              { className: 'dbf-modal-version is-new' },
-                              h('span', { className: 'dbf-modal-version-label' }, t('update.label.latest')),
-                              h('span', { className: 'dbf-modal-version-value' }, 'v' + update.latest),
-                            ),
-                          ),
-                          h('div', { className: 'dbf-modal-note' }, t('update.installHint')),
-                          h(
-                            'div',
-                            { className: 'dbf-modal-actions' },
-                            h(
-                              'button',
-                              { type: 'button', className: 'dbf-textbtn', onClick: () => setUpdateOpen(false) },
-                              t('update.later'),
-                            ),
-                            h(
-                              'button',
-                              { type: 'button', className: 'dbf-btn-primary', onClick: () => void copyInstallSpec() },
-                              copied ? t('update.copied') : t('update.copy'),
-                            ),
-                          ),
-                        )
-                      : h(
-                          'div',
-                          null,
-                          h('div', { className: 'dbf-modal-body' }, t('update.latest', { current: update.current || snapshot?.version || '—' })),
-                          h(
-                            'div',
-                            { className: 'dbf-modal-actions' },
-                            h(
-                              'button',
-                              { type: 'button', className: 'dbf-btn-primary', onClick: () => setUpdateOpen(false) },
-                              t('settings.done'),
-                            ),
-                          ),
-                        ),
-              ),
-            );
-
       const surface = settingsOpen ? settingsPanel : open ? card : pill;
 
       const tree = h(
@@ -1817,9 +1619,6 @@ window.__ModuleLoader__.load({
         h('style', { key: 'css' }, STYLE),
         surface,
         bubble,
-        createPortal !== null && typeof document !== 'undefined' && updateModal !== null
-          ? createPortal(updateModal, document.body)
-          : updateModal,
       );
       return createPortal !== null && typeof document !== 'undefined' ? createPortal(tree, document.body) : tree;
     }
@@ -1831,9 +1630,19 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'balance-float: dictionaries');
       const t = ctx.locale.bind(NS);
+      // The plugin page ships its own update button, so the footer version just
+      // jumps there instead of running a second update flow.
+      const openPluginPage = () => {
+        try {
+          const navigation = ctx.get('pluginNavigation');
+          navigation?.openBundle?.(PACKAGE_NAME);
+        } catch {
+          // plugin manager UI not installed: nothing to open
+        }
+      };
       ctx.slots.inject('shell.overlay', () =>
         ctx.slots.register({ name: 'shell.overlay', id: 'balance-float', order: 60, locale: NS }, (props) =>
-          h(MemoBalanceFloat, { ...props, t }),
+          h(MemoBalanceFloat, { ...props, t, openPluginPage }),
         ),
       );
     }

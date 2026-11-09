@@ -57,39 +57,32 @@ function isNewer(a, b) {
   return false
 }
 
-/** Cached check against the published package.json on the default branch. */
+/** Cached check against the version published on npm. */
 const UPDATE_TTL_MS = 5 * 60 * 1000
-// Only the *published* version is cached; `current` is re-read every call so a
-// locally bumped version never reports the value cached minutes ago.
+// Only the published version is cached; `current` is re-read every call so a
+// locally bumped version is compared against the fresh one.
 let updateCache = { at: 0, latest: null }
 
 async function checkUpdate({ fresh = false } = {}) {
   const now = Date.now()
   const current = packageVersion()
-  // A manual click must never be answered from the cache: the published version
-  // can change right after a silent check.
   if (!fresh && updateCache.latest !== null && now - updateCache.at < UPDATE_TTL_MS) {
     return { ok: true, current, latest: updateCache.latest, hasUpdate: isNewer(updateCache.latest, current) }
   }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10000)
   try {
-    // api.github.com is reachable on hosts where raw.githubusercontent.com is
-    // not (and it needs no token for a public repo).
-    const response = await fetch(
-      'https://api.github.com/repos/ming-a1/dsh-balance-float/contents/package.json?ref=main',
-      {
-        signal: controller.signal,
-        headers: { accept: 'application/vnd.github.raw', 'user-agent': 'dsh-balance-float' },
-      },
-    )
+    const response = await fetch('https://registry.npmjs.org/@lls-a1/dsh-balance-float/latest', {
+      signal: controller.signal,
+      headers: { accept: 'application/json', 'user-agent': 'dsh-balance-float' },
+    })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const pkg = JSON.parse(await response.text())
     const latest = typeof pkg?.version === 'string' ? pkg.version : ''
     if (latest !== '') updateCache = { at: now, latest }
     return { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
   } catch (error) {
-    // Do not cache failures: the next click retries.
+    // Do not cache failures: the next check retries.
     return { ok: false, current, latest: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) }
   } finally {
     clearTimeout(timer)
