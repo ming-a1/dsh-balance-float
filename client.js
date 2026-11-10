@@ -113,6 +113,8 @@ window.__ModuleLoader__.load({
       'history.window.30': '近30天',
       'history.window.month': '本月',
       'history.calls': '{calls} 次',
+      'history.peak': '峰段 {cost}',
+      'history.valley': '谷段 {cost}',
       'history.total': '合计 {total}',
       version: '版本',
       'version.open': '打开插件页（更新在这里）',
@@ -205,6 +207,8 @@ window.__ModuleLoader__.load({
       'history.window.30': '30d',
       'history.window.month': 'Month',
       'history.calls': '{calls} calls',
+      'history.peak': 'Peak {cost}',
+      'history.valley': 'Valley {cost}',
       'history.total': 'Total {total}',
       version: 'Version',
       'version.open': 'Open the plugin page (updates live there)',
@@ -348,6 +352,8 @@ window.__ModuleLoader__.load({
       '.dbf-trend-meta{display:flex;align-items:baseline;gap:8px;margin-top:5px}',
       '.dbf-trend-total{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}',
       '.dbf-trend-calls{font-size:11px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-trend-split{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}',
+      '.dbf-trend-dot{color:var(--dsw-alias-label-secondary);opacity:.6}',
       '.dbf-bars{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;height:58px;margin-top:8px;padding-bottom:2px;overflow-x:auto;scrollbar-width:none}',
       '.dbf-bar{flex:1 0 auto;min-width:13px;max-width:32px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}',
       '.dbf-bar-fill{width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--dsw-alias-border-l2)}',
@@ -1064,6 +1070,8 @@ window.__ModuleLoader__.load({
             })()
           : allHistory.slice(-Number(chartWindow));
       const windowTotal = history.reduce((sum, row) => sum + (row.cost ?? 0), 0);
+      const windowPeakCost = history.reduce((sum, row) => sum + (row.peakCost ?? 0), 0);
+      const windowValleyCost = history.reduce((sum, row) => sum + (row.valleyCost ?? 0), 0);
       const windowModels = (() => {
         const table = {};
         for (const row of history) {
@@ -1424,6 +1432,13 @@ window.__ModuleLoader__.load({
               { className: 'dbf-trend-calls' },
               t('history.calls', { calls: history.reduce((sum, row) => sum + (row.calls ?? 0), 0) }),
             ),
+          ),
+          h(
+            'div',
+            { className: 'dbf-trend-split' },
+            h('span', { className: 'dbf-peak' }, t('history.peak', { cost: '¥' + money(windowPeakCost) })),
+            h('span', { className: 'dbf-trend-dot' }, '·'),
+            h('span', { className: 'dbf-valley' }, t('history.valley', { cost: '¥' + money(windowValleyCost) })),
           ),
           windowModels.length > 0
             ? h(
