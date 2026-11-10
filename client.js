@@ -63,8 +63,9 @@ window.__ModuleLoader__.load({
       balance: '余额',
       topup: '充值 ↗',
       'topup.title': '打开 DeepSeek 官方充值页',
-      'balance.note': '今日 0 点 {start}，已用 {used}',
+      'balance.note': '总余额 {balance}，已用 {used}',
       'balance.noStart': '今日已用 {used}',
+      'balance.startHint': '今日 0 点余额 {start}',
       today: '今日已用',
       turn: '本轮消耗',
       'turn.label': '本轮',
@@ -107,7 +108,11 @@ window.__ModuleLoader__.load({
       'price.hit': '命中',
       'price.miss': '未命中',
       'price.out': '输出',
-      history: '近 7 天',
+      history: '用量趋势',
+      'history.window.7': '近7天',
+      'history.window.30': '近30天',
+      'history.window.month': '本月',
+      'history.calls': '{calls} 次',
       'history.total': '合计 {total}',
       version: '版本',
       'version.open': '打开插件页（更新在这里）',
@@ -150,8 +155,9 @@ window.__ModuleLoader__.load({
       balance: 'Balance',
       topup: 'Top up ↗',
       'topup.title': 'Open the official DeepSeek top-up page',
-      'balance.note': 'Started today at {start}, used {used}',
+      'balance.note': 'Balance {balance}, used {used}',
       'balance.noStart': 'Used today {used}',
+      'balance.startHint': 'Balance at midnight {start}',
       today: 'Used today',
       turn: 'Last turn',
       'turn.label': 'Turn',
@@ -194,7 +200,11 @@ window.__ModuleLoader__.load({
       'price.hit': 'Hit',
       'price.miss': 'Miss',
       'price.out': 'Out',
-      history: 'Last 7 days',
+      history: 'Usage trend',
+      'history.window.7': '7d',
+      'history.window.30': '30d',
+      'history.window.month': 'Month',
+      'history.calls': '{calls} calls',
       'history.total': 'Total {total}',
       version: 'Version',
       'version.open': 'Open the plugin page (updates live there)',
@@ -277,9 +287,10 @@ window.__ModuleLoader__.load({
       '.dbf-bubble.is-right-of .dbf-bubble-caret{top:50%;left:-4px;margin-top:-4px;transform:rotate(-45deg)}',
       '.dbf-bubble.is-left-of .dbf-bubble-caret{top:50%;right:-4px;left:auto;margin-top:-4px;transform:rotate(135deg)}',
       '@keyframes dbf-flash-side{0%{opacity:0}12%{opacity:1}84%{opacity:1}100%{opacity:0}}',
-      '.dbf-switch{flex:none;width:34px;height:20px;padding:0;border-radius:999px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));position:relative;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
+      '.dbf-switch{flex:none;width:34px;height:20px;padding:0;border-radius:999px;border:1px solid var(--dsw-alias-border-l2,#c9ced6);background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-layer-2));position:relative;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
       '.dbf-switch.is-on{background:var(--dsw-alias-brand-primary,#4d6bfe);border-color:transparent}',
-      '.dbf-switch-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s ease}',
+      '.dbf-switch-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--dsw-alias-label-primary,#111);box-shadow:0 1px 2px rgba(0,0,0,.18);transition:transform .15s ease,background-color .15s ease}',
+      '.dbf-switch.is-on .dbf-switch-knob{background:#fff}',
       '.dbf-switch.is-on .dbf-switch-knob{transform:translateX(14px)}',
       '.dbf-topup{flex:none;padding:3px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,currentColor));background:var(--dsw-alias-button-primary-dimmed,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;font-weight:600;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
       '.dbf-topup:hover{border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
@@ -323,11 +334,26 @@ window.__ModuleLoader__.load({
       '.dbf-valley{color:var(--dsw-alias-state-success-primary)}',
       '.dbf-badge.dbf-peak{border-color:currentColor}',
       '.dbf-badge.dbf-valley{border-color:currentColor}',
-      '.dbf-bars{display:flex;align-items:flex-end;gap:5px;height:46px;margin-top:9px}',
-      '.dbf-bar{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}',
+      '.dbf-windows{display:inline-flex;gap:2px}',
+      '.dbf-models-window{margin-top:6px}',
+      '.dbf-mrow{display:flex;align-items:center;gap:6px;font-size:11px;line-height:16px}',
+      '.dbf-mname{min-width:66px;color:var(--dsw-alias-label-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.dbf-mbar-track{flex:1 1 auto;height:4px;border-radius:2px;background:var(--dsw-alias-border-l1);overflow:hidden}',
+      '.dbf-mbar{display:block;height:100%;border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe);opacity:.75}',
+      '.dbf-mcost{font-variant-numeric:tabular-nums}',
+      '.dbf-mshare{min-width:30px;text-align:right;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}',
+      '.dbf-window{padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:20px;cursor:pointer}',
+      '.dbf-window:hover{color:var(--dsw-alias-label-primary)}',
+      '.dbf-window.is-active{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4d6bfe) 16%,transparent);color:var(--dsw-alias-label-primary);font-weight:600}',
+      '.dbf-trend-meta{display:flex;align-items:baseline;gap:8px;margin-top:5px}',
+      '.dbf-trend-total{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}',
+      '.dbf-trend-calls{font-size:11px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-bars{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;height:58px;margin-top:8px;padding-bottom:2px;overflow-x:auto;scrollbar-width:none}',
+      '.dbf-bar{flex:1 0 auto;min-width:13px;max-width:32px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}',
       '.dbf-bar-fill{width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--dsw-alias-border-l2)}',
       '.dbf-bar.is-today .dbf-bar-fill{background:var(--dsw-alias-brand-primary)}',
-      '.dbf-bar-day{color:var(--dsw-alias-label-secondary);font-size:9.5px;line-height:12px;font-variant-numeric:tabular-nums}',
+      '.dbf-bar-day{color:var(--dsw-alias-label-secondary);font-size:9.5px;line-height:12px;white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '.dbf-bar.is-today .dbf-bar-day{color:var(--dsw-alias-label-primary);font-weight:600}',
       '.dbf-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 11px;background:transparent;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:14px}',
       '.dbf-foot-path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.dbf-foot-time{margin-left:auto;white-space:nowrap}',
@@ -453,11 +479,31 @@ window.__ModuleLoader__.load({
     }
 
     /** Short model name for the price table. */
+    /** Compact label: vendor + version + tier, so similar ids stay distinct. */
     function modelLabel(model) {
-      const key = String(model || '').toLowerCase();
-      if (key.indexOf('pro') !== -1) return 'Pro';
-      if (key.indexOf('flash') !== -1) return 'Flash';
-      return String(model || '—');
+      const raw = String(model || '');
+      if (raw === '') return '—';
+      const key = raw.toLowerCase();
+      let vendor = '';
+      let rest = key;
+      if (rest.startsWith('deepseek')) {
+        vendor = 'DS';
+        rest = rest.replace(/^deepseek[-_]?/, '');
+      } else if (rest.startsWith('glm')) {
+        vendor = 'GLM';
+        rest = rest.replace(/^glm[-_]?/, '');
+      } else if (rest.startsWith('claude')) {
+        vendor = 'Claude';
+        rest = rest.replace(/^claude[-_]?/, '');
+      } else if (rest.startsWith('gpt')) {
+        vendor = 'GPT';
+        rest = rest.replace(/^gpt[-_]?/, '');
+      }
+      const tier = rest.includes('pro') ? 'Pro' : rest.includes('flash') ? 'Flash' : '';
+      // First version-like token that is not a date/build stamp (four digits).
+      const version = (rest.match(/v?\d+(?:\.\d+)?/g) ?? []).find((token) => !/^\d{4}$/.test(token)) ?? '';
+      const label = [vendor, version, tier].filter((part) => part !== '').join(' ');
+      return label === '' ? raw : label;
     }
 
     /** Persisted appearance, clamped to the sliders' own ranges. */
@@ -562,8 +608,10 @@ window.__ModuleLoader__.load({
       const [bubbleUp, setBubbleUp] = useState(false);
       // «?» next to the current billing period: reveals the peak/valley windows.
       const [hintOpen, setHintOpen] = useState(false);
-      // A bar of the 7-day chart opens that day's detail view.
+      // A bar of the chart opens that day's detail view; the chart shows 7 or
+      // 30 days (or the current month) depending on the chosen window.
       const [selectedDay, setSelectedDay] = useState(null);
+      const [chartWindow, setChartWindow] = useState('7');
       // Token buckets are collapsed until asked for.
       const [tokensOpen, setTokensOpen] = useState(false);
       // Auto check: null | {phase, latest, current, hasUpdate}
@@ -1007,8 +1055,26 @@ window.__ModuleLoader__.load({
       const countdown = typeof nextAt === 'number' ? duration(t, nextAt - now) : '';
       const stale = typeof snapshot?.today === 'string' && snapshot.today !== new Date(now + 8 * 3600 * 1000).toISOString().slice(0, 10);
       const prices = Array.isArray(snapshot?.prices) ? snapshot.prices : [];
-      const history = Array.isArray(snapshot?.history) ? snapshot.history : [];
-      const historyMax = typeof snapshot?.historyMax === 'number' && snapshot.historyMax > 0 ? snapshot.historyMax : 0;
+      const allHistory = Array.isArray(snapshot?.history) ? snapshot.history : [];
+      const history =
+        chartWindow === 'month'
+          ? (() => {
+              const prefix = (snapshot?.today ?? '').slice(0, 7);
+              return allHistory.filter((row) => row.day.startsWith(prefix));
+            })()
+          : allHistory.slice(-Number(chartWindow));
+      const windowTotal = history.reduce((sum, row) => sum + (row.cost ?? 0), 0);
+      const windowModels = (() => {
+        const table = {};
+        for (const row of history) {
+          for (const model of row.models ?? []) {
+            const entry = table[model.model] ?? (table[model.model] = { model: model.model, cost: 0, tokens: 0 });
+            entry.cost += model.cost ?? 0;
+            entry.tokens += model.tokens ?? 0;
+          }
+        }
+        return Object.values(table).sort((a, b) => b.cost - a.cost);
+      })();
       const models = Array.isArray(snapshot?.models) ? snapshot.models : [];
       const turn = snapshot?.turn ?? null;
 
@@ -1124,9 +1190,17 @@ window.__ModuleLoader__.load({
           ),
           h(
             'div',
-            { className: 'dbf-sub' },
-            typeof snapshot?.dayStart === 'number'
-              ? t('balance.note', { start: '¥' + money(snapshot.dayStart), used: '¥' + money(snapshot.todayUsed) })
+            {
+              className: 'dbf-sub',
+              // The midnight baseline stays available on hover for anyone who
+              // wants to check how "today used" was derived.
+              title:
+                typeof snapshot?.dayStart === 'number'
+                  ? t('balance.startHint', { start: '¥' + money(snapshot.dayStart) })
+                  : undefined,
+            },
+            typeof snapshot?.balance === 'number'
+              ? t('balance.note', { balance: '¥' + money(snapshot.balance), used: '¥' + money(snapshot.todayUsed) })
               : t('balance.noStart', { used: '¥' + money(snapshot?.todayUsed) }),
           ),
           h(
@@ -1315,13 +1389,6 @@ window.__ModuleLoader__.load({
                   ),
                 ),
               ),
-          models.length > 0
-            ? h(
-                'div',
-                { className: 'dbf-sub', style: { marginTop: '6px' } },
-                models.map((row) => modelLabel(row.model) + ' ¥' + money(row.cost)).join(' · '),
-              )
-            : null,
         );
 
         const historyBlock = h(
@@ -1331,14 +1398,58 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dbf-row' },
             h('span', { className: 'dbf-row-title' }, t('history')),
-            h('span', { className: 'dbf-sub' }, t('history.total', { total: '¥' + money(snapshot?.historyTotal) })),
+            h(
+              'span',
+              { className: 'dbf-windows' },
+              ['7', '30', 'month'].map((key) =>
+                h(
+                  'button',
+                  {
+                    key,
+                    type: 'button',
+                    className: 'dbf-window' + (chartWindow === key ? ' is-active' : ''),
+                    onClick: () => setChartWindow(key),
+                  },
+                  t('history.window.' + key),
+                ),
+              ),
+            ),
           ),
+          h(
+            'div',
+            { className: 'dbf-trend-meta' },
+            h('span', { className: 'dbf-trend-total' }, '¥' + money(windowTotal)),
+            h(
+              'span',
+              { className: 'dbf-trend-calls' },
+              t('history.calls', { calls: history.reduce((sum, row) => sum + (row.calls ?? 0), 0) }),
+            ),
+          ),
+          windowModels.length > 0
+            ? h(
+                'div',
+                { className: 'dbf-models dbf-models-window' },
+                windowModels.map((row) => {
+                  const total = windowTotal > 0 ? windowTotal : 1;
+                  const share = Math.max(2, Math.round(((row.cost ?? 0) / total) * 100));
+                  return h(
+                    'div',
+                    { key: row.model, className: 'dbf-mrow' },
+                    h('span', { className: 'dbf-mname', title: row.model }, modelLabel(row.model)),
+                    h('span', { className: 'dbf-mbar-track' }, h('span', { className: 'dbf-mbar', style: { width: share + '%' } })),
+                    h('span', { className: 'dbf-mcost' }, '¥' + money(row.cost)),
+                    h('span', { className: 'dbf-mshare' }, share + '%'),
+                  );
+                }),
+              )
+            : null,
           h(
             'div',
             { className: 'dbf-bars' },
             history.map((row) => {
               const value = typeof row.cost === 'number' ? row.cost : 0;
-              const ratio = historyMax > 0 ? Math.max(2, Math.round((value / historyMax) * 38)) : 2;
+              const windowMax = Math.max(...history.map((entry) => entry.cost ?? 0), 0);
+              const ratio = windowMax > 0 ? Math.max(2, Math.round((value / windowMax) * 38)) : 2;
               const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
               return h(
                 'div',
@@ -1357,7 +1468,7 @@ window.__ModuleLoader__.load({
                   },
                 },
                 h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
-                h('div', { className: 'dbf-bar-day' }, row.day.slice(5)),
+                h('div', { className: 'dbf-bar-day' }, row.day.slice(8).replace(/^0/, '')),
               );
             }),
           ),
