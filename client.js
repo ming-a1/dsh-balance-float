@@ -109,6 +109,7 @@ window.__ModuleLoader__.load({
       'price.miss': '未命中',
       'price.out': '输出',
       history: '用量趋势',
+      'history.window.today': '今天',
       'history.window.7': '近7天',
       'history.window.30': '近30天',
       'history.window.month': '本月',
@@ -203,6 +204,7 @@ window.__ModuleLoader__.load({
       'price.miss': 'Miss',
       'price.out': 'Out',
       history: 'Usage trend',
+      'history.window.today': 'Today',
       'history.window.7': '7d',
       'history.window.30': '30d',
       'history.window.month': 'Month',
@@ -614,10 +616,10 @@ window.__ModuleLoader__.load({
       const [bubbleUp, setBubbleUp] = useState(false);
       // «?» next to the current billing period: reveals the peak/valley windows.
       const [hintOpen, setHintOpen] = useState(false);
-      // A bar of the chart opens that day's detail view; the chart shows 7 or
-      // 30 days (or the current month) depending on the chosen window.
+      // A bar of the chart opens that day's detail view; the chart shows today,
+      // 7 or 30 days, or the current month depending on the chosen window.
       const [selectedDay, setSelectedDay] = useState(null);
-      const [chartWindow, setChartWindow] = useState('7');
+      const [chartWindow, setChartWindow] = useState('today');
       // Token buckets are collapsed until asked for.
       const [tokensOpen, setTokensOpen] = useState(false);
       // Auto check: null | {phase, latest, current, hasUpdate}
@@ -1062,17 +1064,32 @@ window.__ModuleLoader__.load({
       const stale = typeof snapshot?.today === 'string' && snapshot.today !== new Date(now + 8 * 3600 * 1000).toISOString().slice(0, 10);
       const prices = Array.isArray(snapshot?.prices) ? snapshot.prices : [];
       const allHistory = Array.isArray(snapshot?.history) ? snapshot.history : [];
-      const history =
-        chartWindow === 'month'
-          ? (() => {
-              const prefix = (snapshot?.today ?? '').slice(0, 7);
-              return allHistory.filter((row) => row.day.startsWith(prefix));
-            })()
-          : allHistory.slice(-Number(chartWindow));
-      const windowTotal = history.reduce((sum, row) => sum + (row.cost ?? 0), 0);
-      const windowPeakCost = history.reduce((sum, row) => sum + (row.peakCost ?? 0), 0);
-      const windowValleyCost = history.reduce((sum, row) => sum + (row.valleyCost ?? 0), 0);
-      const windowModels = (() => {
+      const todayWindow = chartWindow === 'today';
+      const history = todayWindow
+        ? allHistory.filter((row) => row.day === snapshot?.today)
+        : chartWindow === 'month'
+            ? (() => {
+                const prefix = (snapshot?.today ?? '').slice(0, 7);
+                return allHistory.filter((row) => row.day.startsWith(prefix));
+              })()
+            : allHistory.slice(-Number(chartWindow));
+      // "Today" reads the live counters: the history row is written by the
+      // ledger and can lag behind the current turn.
+      const windowTotal = todayWindow
+        ? (snapshot?.todayUsed ?? 0)
+        : history.reduce((sum, row) => sum + (row.cost ?? 0), 0);
+      const windowPeakCost = todayWindow
+        ? (snapshot?.todayPeakCost ?? 0)
+        : history.reduce((sum, row) => sum + (row.peakCost ?? 0), 0);
+      const windowValleyCost = todayWindow
+        ? (snapshot?.todayValleyCost ?? 0)
+        : history.reduce((sum, row) => sum + (row.valleyCost ?? 0), 0);
+      const windowCalls = todayWindow
+        ? (snapshot?.todayCalls ?? 0)
+        : history.reduce((sum, row) => sum + (row.calls ?? 0), 0);
+      const windowModels = todayWindow
+        ? (Array.isArray(snapshot?.models) ? snapshot.models : [])
+        : (() => {
         const table = {};
         for (const row of history) {
           for (const model of row.models ?? []) {
@@ -1409,7 +1426,7 @@ window.__ModuleLoader__.load({
             h(
               'span',
               { className: 'dbf-windows' },
-              ['7', '30', 'month'].map((key) =>
+              ['today', '7', '30', 'month'].map((key) =>
                 h(
                   'button',
                   {
@@ -1430,7 +1447,7 @@ window.__ModuleLoader__.load({
             h(
               'span',
               { className: 'dbf-trend-calls' },
-              t('history.calls', { calls: history.reduce((sum, row) => sum + (row.calls ?? 0), 0) }),
+              t('history.calls', { calls: windowCalls }),
             ),
           ),
           h(
@@ -1458,36 +1475,38 @@ window.__ModuleLoader__.load({
                 }),
               )
             : null,
-          h(
-            'div',
-            { className: 'dbf-bars' },
-            history.map((row) => {
-              const value = typeof row.cost === 'number' ? row.cost : 0;
-              const windowMax = Math.max(...history.map((entry) => entry.cost ?? 0), 0);
-              const ratio = windowMax > 0 ? Math.max(2, Math.round((value / windowMax) * 38)) : 2;
-              const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
-              return h(
-                'div',
-                {
-                  key: row.day,
-                  className: 'dbf-bar' + (isToday ? ' is-today' : ''),
-                  role: 'button',
-                  tabIndex: 0,
-                  title: row.day + ' ¥' + money(value),
-                  onClick: () => setSelectedDay(row.day),
-                  onKeyDown: (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setSelectedDay(row.day);
-                    }
+          todayWindow
+            ? null
+            : h(
+              'div',
+              { className: 'dbf-bars' },
+              history.map((row) => {
+                const value = typeof row.cost === 'number' ? row.cost : 0;
+                const windowMax = Math.max(...history.map((entry) => entry.cost ?? 0), 0);
+                const ratio = windowMax > 0 ? Math.max(2, Math.round((value / windowMax) * 38)) : 2;
+                const isToday = typeof snapshot?.today === 'string' && row.day === snapshot.today;
+                return h(
+                  'div',
+                  {
+                    key: row.day,
+                    className: 'dbf-bar' + (isToday ? ' is-today' : ''),
+                    role: 'button',
+                    tabIndex: 0,
+                    title: row.day + ' ¥' + money(value),
+                    onClick: () => setSelectedDay(row.day),
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedDay(row.day);
+                      }
+                    },
                   },
-                },
-                h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
-                h('div', { className: 'dbf-bar-day' }, row.day.slice(8).replace(/^0/, '')),
-              );
-            }),
-          ),
-        );
+                  h('div', { className: 'dbf-bar-fill', style: { height: ratio + 'px' } }),
+                  h('div', { className: 'dbf-bar-day' }, row.day.slice(8).replace(/^0/, '')),
+                );
+              }),
+            ),
+          );
 
         const selected = selectedDay === null ? null : history.find((row) => row.day === selectedDay) ?? null;
         const dayBlock =

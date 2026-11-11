@@ -1,6 +1,6 @@
 {
   "name": "@lls-a1/dsh-balance-float",
-  "version": "1.1.55",
+  "version": "1.1.56",
   "publishConfig": {
     "access": "public"
   },
