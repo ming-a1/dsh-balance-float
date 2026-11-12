@@ -31,7 +31,6 @@ window.__ModuleLoader__.load({
     const PACKAGE_NAME = '@lls-a1/dsh-balance-float';
     const ROUTE = '/balance-float/snapshot';
     const ROUTE_UPDATE = '/balance-float/update';
-    const REPO_URL = 'https://github.com/ming-a1/dsh-balance-float';
     const POS_KEY = 'dsh.balance-float.position';
     // Official top-up page; the balance endpoint has no recharge API, so the
     // panel only links out to the console.
@@ -77,13 +76,11 @@ window.__ModuleLoader__.load({
       'peak.label': '峰价',
       valley: '谷价',
       'schedule.title': '峰谷计费时段',
-      'tokens.title': 'Token 用量',
       'tokens.input': '未缓存输入',
       'tokens.cache': '缓存读取',
       'tokens.output': '输出',
       'tokens.total': '合计',
       'tokens.hit': '缓存命中',
-      'tokens.empty': '分项从本版本开始记录，历史事件只有合计',
       'day.back': '← 返回',
       'day.title': '当日明细',
       'day.calls': '{count} 次调用 · {tokens} tokens',
@@ -110,6 +107,7 @@ window.__ModuleLoader__.load({
       'price.out': '输出',
       history: '用量趋势',
       'history.window.today': '今天',
+      'history.yesterday': '昨天',
       'history.window.7': '近7天',
       'history.window.30': '近30天',
       'history.window.month': '本月',
@@ -172,13 +170,11 @@ window.__ModuleLoader__.load({
       'peak.label': 'Peak',
       valley: 'Off-peak',
       'schedule.title': 'Peak and off-peak windows',
-      'tokens.title': 'Token usage',
       'tokens.input': 'Uncached input',
       'tokens.cache': 'Cache read',
       'tokens.output': 'Output',
       'tokens.total': 'Total',
       'tokens.hit': 'Cache hit',
-      'tokens.empty': 'Buckets are recorded from this version on; older events only carry the total',
       'day.back': '← Back',
       'day.title': 'Day detail',
       'day.calls': '{count} calls · {tokens} tokens',
@@ -205,6 +201,7 @@ window.__ModuleLoader__.load({
       'price.out': 'Out',
       history: 'Usage trend',
       'history.window.today': 'Today',
+      'history.yesterday': 'Yesterday',
       'history.window.7': '7d',
       'history.window.30': '30d',
       'history.window.month': 'Month',
@@ -268,14 +265,14 @@ window.__ModuleLoader__.load({
       '.dbf-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}',
       '.dbf-dot.is-peak{background:var(--dsw-alias-state-error-primary)}',
       '.dbf-dot.is-valley{background:var(--dsw-alias-state-success-primary)}',
-      '.dbf-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:999px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:4px;border:.5px solid var(--dsw-alias-border-l1);background:transparent;font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary)}',
       '.dbf-card{user-select:none;-webkit-user-select:none;width:316px;border-radius:calc(var(--dbf-radius,16) * 1px);background:transparent;box-shadow:0 12px 36px rgba(0,0,0,calc(.22 * var(--dbf-shadow,1)));overflow:hidden;font-size:12px;line-height:18px;animation:dbf-open-down .24s cubic-bezier(.22,.61,.36,1) both;display:flex;flex-direction:column;will-change:transform,opacity}',
       '.dbf-dir-up .dbf-card{animation-name:dbf-open-up}',
       '.dbf-head{display:flex;align-items:center;gap:8px;padding:9px 11px;background:transparent;border-bottom:.5px solid var(--dsw-alias-border-l1);cursor:grab;user-select:none;touch-action:none}',
       '.dbf-head.is-static{cursor:default}',
       '.dbf-head:active{cursor:grabbing}',
       '.dbf-head-title{flex:1;min-width:0;font-weight:600}',
-      '.dbf-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;line-height:1;transition:background .12s ease,color .12s ease}',
+      '.dbf-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;line-height:1;transition:background .12s ease,color .12s ease}',
       '.dbf-icon svg{display:block}',
       '.dbf-icon:disabled{cursor:default;opacity:.6}',
       '.dbf-spinning svg{animation:dbf-spin .9s linear infinite}',
@@ -298,24 +295,21 @@ window.__ModuleLoader__.load({
       '.dbf-switch-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--dsw-alias-label-primary,#111);box-shadow:0 1px 2px rgba(0,0,0,.18);transition:transform .15s ease,background-color .15s ease}',
       '.dbf-switch.is-on .dbf-switch-knob{background:#fff}',
       '.dbf-switch.is-on .dbf-switch-knob{transform:translateX(14px)}',
-      '.dbf-topup{flex:none;padding:3px 10px;border-radius:999px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,currentColor));background:var(--dsw-alias-button-primary-dimmed,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;font-weight:600;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
+      '.dbf-topup{flex:none;padding:3px 10px;border-radius:4px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,currentColor));background:var(--dsw-alias-button-primary-dimmed,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary);font:inherit;font-size:11px;font-weight:600;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}',
       '.dbf-topup:hover{border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-topup:active{transform:translateY(.5px)}',
       '.dbf-countdown{margin-top:8px;margin-bottom:4px;font-size:15px;line-height:22px;letter-spacing:.01em}',
-      '.dbf-version{display:inline-flex;align-items:center;gap:4px;margin-left:-5px;padding:1px 6px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}',
+      '.dbf-version{display:inline-flex;align-items:center;gap:4px;margin-left:-5px;padding:1px 6px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:16px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}',
       '.dbf-version:hover{border-color:var(--dsw-alias-border-l2,var(--dsw-alias-border-l1));background:color-mix(in srgb,var(--dsw-alias-label-primary) 9%,transparent);color:var(--dsw-alias-label-primary)}',
       '.dbf-version-glyph{font-size:10px;opacity:.75}',
       '.dbf-version.has-update{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-version.has-update .dbf-version-glyph{opacity:1}',
-      '.dbf-fold-head{cursor:pointer;user-select:none}',
-      '.dbf-fold-arrow{display:inline-block;width:10px;margin-right:3px;color:var(--dsw-alias-label-tertiary);font-size:9px}',
-      '.dbf-fold-head:hover .dbf-row-title{color:var(--dsw-alias-label-primary)}',
       '.dbf-token-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:1px 0}',
       '.dbf-models{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
       '.dbf-model-row{display:flex;align-items:baseline;gap:8px}',
       '.dbf-model-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}',
       '.dbf-bar{cursor:pointer}',
-      '.dbf-help{flex:none;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;padding:0;border-radius:50%;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:transparent;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:1;font-weight:600;cursor:pointer}',
+      '.dbf-help{flex:none;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;padding:0;border-radius:4px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2));background:transparent;color:var(--dsw-alias-label-secondary);font-size:10px;line-height:1;font-weight:600;cursor:pointer}',
       '.dbf-help:hover,.dbf-help.is-open{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-hint{margin-top:6px;padding:7px 9px;border-radius:8px;background:var(--dsw-alias-bg-layer-2,var(--dsw-alias-bg-overlay));display:flex;flex-direction:column;gap:3px}',
       '.dbf-rules{margin-top:4px;display:flex;flex-direction:column;gap:2px}',
@@ -340,7 +334,17 @@ window.__ModuleLoader__.load({
       '.dbf-valley{color:var(--dsw-alias-state-success-primary)}',
       '.dbf-badge.dbf-peak{border-color:currentColor}',
       '.dbf-badge.dbf-valley{border-color:currentColor}',
-      '.dbf-windows{display:inline-flex;gap:2px}',
+      '.dbf-windows{display:inline-flex;gap:2px;align-items:center}',
+      '.dbf-daypick{position:relative;display:inline-flex}',
+      '.dbf-daymenu.is-floating{position:fixed;margin-top:0;z-index:2147483000}',
+      '.dbf-daymenu{position:absolute;top:100%;right:0;margin-top:6px;z-index:20;min-width:116px;max-height:216px;overflow:auto;padding:4px;border-radius:8px;background:transparent;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,var(--dsw-alias-border-l1)));color:var(--dsw-alias-label-primary,CanvasText);box-shadow:0 8px 22px rgba(0,0,0,calc(.16 * var(--dbf-shadow,1)));overscroll-behavior:contain;scrollbar-width:none}',
+      '.dbf-dayitem{display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px;line-height:18px;text-align:left;cursor:pointer;white-space:nowrap}',
+      '.dbf-dayitem:hover{background:color-mix(in srgb,var(--dsw-alias-label-primary) 8%,transparent)}',
+      '.dbf-dayitem.is-active{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4d6bfe) 12%,transparent);color:var(--dsw-alias-brand-primary,#4d6bfe);font-weight:600}',
+      '.dbf-dayitem.is-group-start{margin-top:3px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:7px}',
+      '.dbf-dayitem-label{flex:1 1 auto}',
+      '.dbf-dayitem-sub{flex:none;font-size:10.5px;font-weight:400;color:var(--dsw-alias-label-secondary);opacity:.85}',
+      '.dbf-dayitem-check{flex:none;font-size:11px}',
       '.dbf-models-window{margin-top:6px}',
       '.dbf-mrow{display:flex;align-items:center;gap:6px;font-size:11px;line-height:16px}',
       '.dbf-mname{min-width:66px;color:var(--dsw-alias-label-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -348,7 +352,7 @@ window.__ModuleLoader__.load({
       '.dbf-mbar{display:block;height:100%;border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe);opacity:.75}',
       '.dbf-mcost{font-variant-numeric:tabular-nums}',
       '.dbf-mshare{min-width:30px;text-align:right;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}',
-      '.dbf-window{padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:20px;cursor:pointer}',
+      '.dbf-window{padding:0 8px;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:20px;cursor:pointer}',
       '.dbf-window:hover{color:var(--dsw-alias-label-primary)}',
       '.dbf-window.is-active{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4d6bfe) 16%,transparent);color:var(--dsw-alias-label-primary);font-weight:600}',
       '.dbf-trend-meta{display:flex;align-items:baseline;gap:8px;margin-top:5px}',
@@ -384,8 +388,11 @@ window.__ModuleLoader__.load({
       '.dbf-track-fill{position:absolute;left:0;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:var(--dsw-alias-brand-primary,#4d6bfe)}',
       '.dbf-track-thumb{position:absolute;top:50%;width:14px;height:14px;margin-left:-7px;transform:translateY(-50%);border-radius:50%;background:var(--dsw-alias-bg-overlay);border:2px solid var(--dsw-alias-brand-primary,#4d6bfe);box-shadow:0 1px 3px rgba(0,0,0,calc(.3 * var(--dbf-shadow,1)))}',
       '.dbf-setting-val{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-secondary)}',
-      '.dbf-textbtn{padding:1px 9px;border:.5px solid var(--dsw-alias-border-l1);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;line-height:18px}',
+      '.dbf-textbtn{padding:1px 9px;border:1px solid var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,var(--dsw-alias-border-l1)));border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font:inherit;line-height:18px}',
       '.dbf-textbtn:hover{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
+      '.dbf-textbtn.is-ghost{padding:1px 8px;border-color:var(--dsw-alias-border-l3,var(--dsw-alias-border-l2,var(--dsw-alias-border-l1)));border-radius:4px;background:transparent;font-weight:600}',
+      '.dbf-textbtn.is-ghost:hover{background:transparent;color:var(--dsw-alias-label-primary)}',
+      '.dbf-textbtn.is-ghost:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#4d6bfe);outline-offset:2px}',
       '.dbf-error{color:var(--dsw-alias-state-error-primary)}',
       '.dbf-skel{color:var(--dsw-alias-label-secondary)}',
     ].join('');
@@ -594,6 +601,8 @@ window.__ModuleLoader__.load({
     function BalanceFloat(props) {
       const t = props.t;
       const openPluginPage = typeof props.openPluginPage === 'function' ? props.openPluginPage : () => {};
+      const buildDayMenu = (node) =>
+        createPortal !== null && typeof document !== 'undefined' ? createPortal(node, document.body) : node;
       const [snapshot, setSnapshot] = useState(null);
       const [failure, setFailure] = useState('');
       const [busy, setBusy] = useState(false);
@@ -618,13 +627,66 @@ window.__ModuleLoader__.load({
       const [hintOpen, setHintOpen] = useState(false);
       // A bar of the chart opens that day's detail view; the chart shows today,
       // 7 or 30 days, or the current month depending on the chosen window.
-      const [selectedDay, setSelectedDay] = useState(null);
       const [chartWindow, setChartWindow] = useState('today');
+      // Clicking a bar opens that day's detail panel.
+      const [selectedDay, setSelectedDay] = useState(null);
+      // In the day window the user can step back to earlier days via the picker.
+      const [trendDay, setTrendDay] = useState('');
+      const [dayMenuOpen, setDayMenuOpen] = useState(false);
+      // The card body scrolls, so the menu is rendered into <body> and placed
+      // next to the button; an in-flow absolute menu would be clipped.
+      const [dayMenuPos, setDayMenuPos] = useState(null);
+      const dayButtonRef = useRef(null);
+      const dayMenuRef = useRef(null);
       // Token buckets are collapsed until asked for.
-      const [tokensOpen, setTokensOpen] = useState(false);
       // Auto check: null | {phase, latest, current, hasUpdate}
       const [update, setUpdate] = useState(null);
       const updateCheckedAt = useRef(0);
+      // A new day invalidates a picked "yesterday": fall back to today.
+      const todayKeyRef = useRef('');
+      useEffect(() => {
+        const key = snapshot?.today ?? '';
+        if (key === '') return;
+        if (todayKeyRef.current !== '' && todayKeyRef.current !== key) setTrendDay('');
+        todayKeyRef.current = key;
+      }, [snapshot?.today]);
+
+      // The menu is fixed-positioned, so scroll/resize would leave it behind.
+      useEffect(() => {
+        if (!dayMenuOpen) return undefined;
+        const closeOnResize = () => setDayMenuOpen(false);
+        // Scrolling the menu itself must not close it; only scrolls of the
+        // page behind it would leave the fixed menu behind.
+        const closeOnScroll = (event) => {
+          if (dayMenuRef.current?.contains(event.target)) return;
+          setDayMenuOpen(false);
+        };
+        window.addEventListener('resize', closeOnResize);
+        window.addEventListener('scroll', closeOnScroll, true);
+        return () => {
+          window.removeEventListener('resize', closeOnResize);
+          window.removeEventListener('scroll', closeOnScroll, true);
+        };
+      }, [dayMenuOpen]);
+
+      useEffect(() => {
+        if (!dayMenuOpen) return undefined;
+        const onDown = (event) => {
+          if (dayMenuRef.current?.contains(event.target)) return;
+          if (dayButtonRef.current?.contains(event.target)) return;
+          setDayMenuOpen(false);
+        };
+        const onKey = (event) => {
+          if (event.key === 'Escape') setDayMenuOpen(false);
+        };
+        window.addEventListener('pointerdown', onDown, true);
+        window.addEventListener('keydown', onKey, true);
+        return () => {
+          window.removeEventListener('pointerdown', onDown, true);
+          window.removeEventListener('keydown', onKey, true);
+        };
+      }, [dayMenuOpen]);
+
       const flashAtRef = useRef(null);
       const flashTimerRef = useRef(null);
       const leaveTimerRef = useRef(null);
@@ -737,7 +799,6 @@ window.__ModuleLoader__.load({
         setLeaving(true);
         setHintOpen(false);
         setSelectedDay(null);
-        setTokensOpen(false);
         leaveTimerRef.current = window.setTimeout(() => {
           leaveTimerRef.current = null;
           setLeaving(false);
@@ -771,6 +832,8 @@ window.__ModuleLoader__.load({
         void checkUpdate();
       }, [open, snapshot?.version, checkUpdate]);
 
+      const loadSeq = useRef(0);
+      const openRef = useRef(false);
       const load = useCallback(async (manual) => {
         // Hold the spinner for at least one full turn: a local read returns in
         // a few milliseconds, which otherwise looks like nothing happened.
@@ -784,12 +847,28 @@ window.__ModuleLoader__.load({
           setBusy(true);
           setRefreshState('refreshing');
         }
+        // Only the newest request may write state: a slow poll that lands after
+        // a fresh refresh must not overwrite it.
+        const seq = (loadSeq.current += 1);
         try {
-          const response = await fetch(ROUTE, { headers: { accept: 'application/json' }, cache: 'no-store' });
+          // The closed pill never draws the history rows, so skip them.
+          const light = !openRef.current;
+          const url = light ? ROUTE + '?days=0' : ROUTE;
+          const response = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
           const body = await response.json();
-          if (!aliveRef.current) return;
+          if (!aliveRef.current || seq !== loadSeq.current) return;
           if (!response.ok) throw new Error(typeof body?.error === 'string' && body.error !== '' ? body.error : 'HTTP ' + response.status);
-          setSnapshot(body);
+          if (light) {
+            // Keep the last full day rows: the card can open before the next
+            // full poll lands, and rendering zeros in between reads as a bug.
+            setSnapshot((previous) => ({
+              ...body,
+              history: Array.isArray(previous?.history) ? previous.history : [],
+              historyTotal: previous?.historyTotal ?? 0,
+            }));
+          } else {
+            setSnapshot(body);
+          }
           setOffset(typeof body?.serverNow === 'number' ? body.serverNow - Date.now() : 0);
           setFailure('');
           // A new settled turn (new `turn.at`) gets one bubble; the same turn never re-flashes.
@@ -842,6 +921,7 @@ window.__ModuleLoader__.load({
 
       // Expanding the card is also a request for the freshest numbers.
       useEffect(() => {
+        openRef.current = open;
         if (open) load();
       }, [open, load]);
 
@@ -1065,8 +1145,12 @@ window.__ModuleLoader__.load({
       const prices = Array.isArray(snapshot?.prices) ? snapshot.prices : [];
       const allHistory = Array.isArray(snapshot?.history) ? snapshot.history : [];
       const todayWindow = chartWindow === 'today';
+      // The day window defaults to today; picking an earlier day swaps the row.
+      const trendDayValue = trendDay !== '' ? trendDay : (snapshot?.today ?? '');
+      const trendRow = allHistory.find((row) => row.day === trendDayValue) ?? null;
+      const isLiveDay = trendDayValue === (snapshot?.today ?? '');
       const history = todayWindow
-        ? allHistory.filter((row) => row.day === snapshot?.today)
+        ? (trendRow === null ? [] : [trendRow])
         : chartWindow === 'month'
             ? (() => {
                 const prefix = (snapshot?.today ?? '').slice(0, 7);
@@ -1076,19 +1160,33 @@ window.__ModuleLoader__.load({
       // "Today" reads the live counters: the history row is written by the
       // ledger and can lag behind the current turn.
       const windowTotal = todayWindow
-        ? (snapshot?.todayUsed ?? 0)
+        ? (isLiveDay ? (snapshot?.todayUsed ?? 0) : (trendRow?.cost ?? 0))
         : history.reduce((sum, row) => sum + (row.cost ?? 0), 0);
       const windowPeakCost = todayWindow
-        ? (snapshot?.todayPeakCost ?? 0)
+        ? (isLiveDay ? (snapshot?.todayPeakCost ?? 0) : (trendRow?.peakCost ?? 0))
         : history.reduce((sum, row) => sum + (row.peakCost ?? 0), 0);
       const windowValleyCost = todayWindow
-        ? (snapshot?.todayValleyCost ?? 0)
+        ? (isLiveDay ? (snapshot?.todayValleyCost ?? 0) : (trendRow?.valleyCost ?? 0))
         : history.reduce((sum, row) => sum + (row.valleyCost ?? 0), 0);
       const windowCalls = todayWindow
-        ? (snapshot?.todayCalls ?? 0)
+        ? (isLiveDay ? (snapshot?.todayCalls ?? 0) : (trendRow?.calls ?? 0))
         : history.reduce((sum, row) => sum + (row.calls ?? 0), 0);
+      const todayKey = snapshot?.today ?? '';
+      // Pure calendar arithmetic in UTC: the day key is already a Beijing date,
+      // so shifting it with a +08:00 timestamp would land a day early.
+      const yesterdayKey =
+        todayKey === '' ? '' : new Date(Date.parse(todayKey + 'T00:00:00Z') - 86400000).toISOString().slice(0, 10);
+      const dayOptions = [...new Set([todayKey, ...allHistory.map((row) => row.day)])]
+        .filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day) && day <= todayKey)
+        .sort()
+        .reverse()
+        .slice(0, 7);
+      // First plain date in the list: the divider goes above it only.
+      const firstDatedDay = dayOptions.find((day) => day !== todayKey && day !== yesterdayKey) ?? '';
+      const dayLabel = (day) =>
+        day === todayKey ? t('history.window.today') : day === yesterdayKey ? t('history.yesterday') : day.slice(5);
       const windowModels = todayWindow
-        ? (Array.isArray(snapshot?.models) ? snapshot.models : [])
+        ? (isLiveDay ? (Array.isArray(snapshot?.models) ? snapshot.models : []) : (trendRow?.models ?? []))
         : (() => {
         const table = {};
         for (const row of history) {
@@ -1100,7 +1198,6 @@ window.__ModuleLoader__.load({
         }
         return Object.values(table).sort((a, b) => b.cost - a.cost);
       })();
-      const models = Array.isArray(snapshot?.models) ? snapshot.models : [];
       const turn = snapshot?.turn ?? null;
 
       const liveFrame = dragRef.current !== null && liveRef.current !== null ? liveRef.current : frame;
@@ -1260,58 +1357,6 @@ window.__ModuleLoader__.load({
           stale ? h('div', { className: 'dbf-error', style: { marginTop: '4px' } }, t('error.stale')) : null,
         );
 
-        const inputTokens = typeof snapshot?.todayInput === 'number' ? snapshot.todayInput : 0;
-        const cacheTokens = typeof snapshot?.todayCacheRead === 'number' ? snapshot.todayCacheRead : 0;
-        const outputTokens = typeof snapshot?.todayOutput === 'number' ? snapshot.todayOutput : 0;
-        const tokenSum = inputTokens + cacheTokens + outputTokens;
-        const promptSum = inputTokens + cacheTokens;
-        const hitRate = promptSum > 0 ? (cacheTokens / promptSum) * 100 : null;
-        const tokenLine = (label, value) =>
-          h(
-            'div',
-            { className: 'dbf-token-row' },
-            h('span', { className: 'dbf-sub' }, label),
-            h('span', { className: 'dbf-num' }, value),
-          );
-        const tokenBlock = h(
-          'div',
-          { className: 'dbf-block' },
-          h(
-            'div',
-            {
-              className: 'dbf-row dbf-fold-head',
-              role: 'button',
-              tabIndex: 0,
-              'aria-expanded': tokensOpen ? 'true' : 'false',
-              onClick: () => setTokensOpen((value) => !value),
-              onKeyDown: (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setTokensOpen((value) => !value);
-                }
-              },
-            },
-            h(
-              'span',
-              { className: 'dbf-row-title' },
-              h('span', { className: 'dbf-fold-arrow', 'aria-hidden': true }, tokensOpen ? '▾' : '▸'),
-              t('tokens.title'),
-            ),
-            h('span', { className: 'dbf-sub' }, tokens(tokenSum)),
-          ),
-          tokensOpen
-            ? h(
-                'div',
-                null,
-                tokenLine(t('tokens.hit'), hitRate === null ? '—' : hitRate.toFixed(1) + '%'),
-                tokenLine(t('tokens.input'), tokens(inputTokens)),
-                tokenLine(t('tokens.cache'), tokens(cacheTokens)),
-                tokenLine(t('tokens.output'), tokens(outputTokens)),
-                tokenSum > 0 ? null : h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('tokens.empty')),
-              )
-            : null,
-        );
-
         const peakBlock = h(
           'div',
           { className: 'dbf-block' },
@@ -1427,16 +1472,94 @@ window.__ModuleLoader__.load({
               'span',
               { className: 'dbf-windows' },
               ['today', '7', '30', 'month'].map((key) =>
-                h(
-                  'button',
-                  {
-                    key,
-                    type: 'button',
-                    className: 'dbf-window' + (chartWindow === key ? ' is-active' : ''),
-                    onClick: () => setChartWindow(key),
-                  },
-                  t('history.window.' + key),
-                ),
+                key === 'today'
+                  ? h(
+                      'span',
+                      { key, className: 'dbf-daypick' },
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          className: 'dbf-window' + (chartWindow === key ? ' is-active' : ''),
+                          ref: dayButtonRef,
+                          'aria-haspopup': 'listbox',
+                          'aria-expanded': dayMenuOpen,
+                          onClick: (event) => {
+                            // Coming from another tab only switches back to today;
+                            // the picker opens when this tab is already active.
+                            if (chartWindow !== key) {
+                              setChartWindow(key);
+                              setTrendDay('');
+                              setDayMenuOpen(false);
+                              return;
+                            }
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setDayMenuPos({ top: rect.bottom + 4, right: Math.max(8, window.innerWidth - rect.right) });
+                            setDayMenuOpen((prev) => !prev);
+                          },
+                        },
+                        dayLabel(trendDayValue) + ' ▾',
+                      ),
+                      dayMenuOpen
+                        ? buildDayMenu(h(
+                            'div',
+                            {
+                              ref: dayMenuRef,
+                              className: 'dbf-daymenu is-floating dbf-surface',
+                              role: 'listbox',
+                              style: {
+                                ...(dayMenuPos === null ? {} : { top: dayMenuPos.top + 'px', right: dayMenuPos.right + 'px' }),
+                                // The menu lives in <body>, outside the root that
+                                // carries the appearance variables.
+                                '--dbf-bg': String((100 - appearance.bg) / 100),
+                                '--dbf-border': String(appearance.border / 100),
+                                '--dbf-shadow': String(appearance.shadow / 100),
+                              },
+                            },
+                            dayOptions.map((day) =>
+                              h(
+                                'button',
+                                {
+                                  key: day,
+                                  type: 'button',
+                                  role: 'option',
+                                  'aria-selected': day === trendDayValue,
+                                  className:
+                                    'dbf-dayitem' +
+                                    (day === trendDayValue ? ' is-active' : '') +
+                                    (day === firstDatedDay ? ' is-group-start' : ''),
+                                  onClick: () => {
+                                    setTrendDay(day === todayKey ? '' : day);
+                                    setChartWindow('today');
+                                    setDayMenuOpen(false);
+                                  },
+                                },
+                                h('span', { className: 'dbf-dayitem-label' }, dayLabel(day)),
+                                h(
+                                  'span',
+                                  { className: 'dbf-dayitem-sub' },
+                                  t('weekday.' + new Date(day + 'T00:00:00Z').getUTCDay()),
+                                ),
+                                day === trendDayValue ? h('span', { className: 'dbf-dayitem-check', 'aria-hidden': true }, '✓') : null,
+                              ),
+                            ),
+                          ))
+                        : null,
+                    )
+                  : h(
+                      'button',
+                      {
+                        key,
+                        type: 'button',
+                        className: 'dbf-window' + (chartWindow === key ? ' is-active' : ''),
+                        'aria-pressed': chartWindow === key,
+                        onClick: () => {
+                          setChartWindow(key);
+                          setDayMenuOpen(false);
+                        },
+                      },
+                      t('history.window.' + key),
+                    ),
               ),
             ),
           ),
@@ -1520,7 +1643,7 @@ window.__ModuleLoader__.load({
                   { className: 'dbf-row' },
                   h(
                     'button',
-                    { type: 'button', className: 'dbf-textbtn', onClick: () => setSelectedDay(null) },
+                    { type: 'button', className: 'dbf-textbtn is-ghost', onClick: () => setSelectedDay(null) },
                     t('day.back'),
                   ),
                   h('span', { className: 'dbf-sub' }, t('day.title')),
@@ -1631,7 +1754,7 @@ window.__ModuleLoader__.load({
         } else if (dayBlock !== null) {
           body.push(dayBlock);
         } else {
-          body.push(balanceBlock, peakBlock, tokenBlock, priceTable, historyBlock);
+          body.push(balanceBlock, peakBlock, priceTable, historyBlock);
         }
 
         card = h(

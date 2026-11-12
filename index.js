@@ -62,6 +62,7 @@ const UPDATE_TTL_MS = 5 * 60 * 1000
 // Only the published version is cached; `current` is re-read every call so a
 // locally bumped version is compared against the fresh one.
 let updateCache = { at: 0, latest: null }
+let updateInFlight = null
 
 async function checkUpdate({ fresh = false } = {}) {
   const now = Date.now()
@@ -69,23 +70,33 @@ async function checkUpdate({ fresh = false } = {}) {
   if (!fresh && updateCache.latest !== null && now - updateCache.at < UPDATE_TTL_MS) {
     return { ok: true, current, latest: updateCache.latest, hasUpdate: isNewer(updateCache.latest, current) }
   }
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 10000)
+  // Collapse concurrent calls (several tabs, or a card opened twice).
+  if (updateInFlight !== null) return updateInFlight
+  const request = (async () => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 10000)
+    try {
+      const response = await fetch('https://registry.npmjs.org/@lls-a1/dsh-balance-float/latest', {
+        signal: controller.signal,
+        headers: { accept: 'application/json', 'user-agent': 'dsh-balance-float' },
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const pkg = JSON.parse(await response.text())
+      const latest = typeof pkg?.version === 'string' ? pkg.version : ''
+      if (latest !== '') updateCache = { at: Date.now(), latest }
+      return { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
+    } catch (error) {
+      // Do not cache failures: the next check retries.
+      return { ok: false, current, latest: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) }
+    } finally {
+      clearTimeout(timer)
+    }
+  })()
+  updateInFlight = request
   try {
-    const response = await fetch('https://registry.npmjs.org/@lls-a1/dsh-balance-float/latest', {
-      signal: controller.signal,
-      headers: { accept: 'application/json', 'user-agent': 'dsh-balance-float' },
-    })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const pkg = JSON.parse(await response.text())
-    const latest = typeof pkg?.version === 'string' ? pkg.version : ''
-    if (latest !== '') updateCache = { at: now, latest }
-    return { ok: true, current, latest, hasUpdate: latest !== '' && isNewer(latest, current) }
-  } catch (error) {
-    // Do not cache failures: the next check retries.
-    return { ok: false, current, latest: '', hasUpdate: false, error: error instanceof Error ? error.message : String(error) }
+    return await request
   } finally {
-    clearTimeout(timer)
+    updateInFlight = null
   }
 }
 
@@ -228,12 +239,15 @@ export function apply(ctx, config) {
             return
           }
           try {
+            const daysParam = new URL(req.url ?? '/', 'http://localhost').searchParams.get('days')
+            const requested = daysParam === null ? Number.NaN : Number(daysParam)
             const snapshot = buildSnapshot({
               ledger: tracker.state,
               sourcePath: paths.store,
               mtimeMs: tracker.lastSavedAt > 0 ? tracker.lastSavedAt : seededAt,
               serverNow: Date.now(),
               version: packageVersion(),
+              days: Number.isFinite(requested) ? requested : 31,
             })
             respondJson(res, 200, snapshot)
           } catch (error) {
