@@ -4,16 +4,22 @@ DSH Web UI 的悬浮小窗，实时显示 **API 余额、今日已用、每轮�
 
 Host 半边在本地记账（按轮记 token 与费用、轮询余额），浏览器半边只读快照渲染，API Key 始终不出 Host 进程。
 
-<img src="docs/preview-pill.svg" alt="收起态：胶囊" width="335">
+<p align="center">
+  <img src="docs/preview-pill.svg" alt="收起态：胶囊" width="335">
+</p>
 
-<img src="docs/preview.svg" alt="展开态：峰价样式" width="320">
-
-<details>
-<summary>🟢 点击查看谷价样式（峰价样式见上图）</summary>
-
-<img src="docs/preview-valley.svg" alt="展开态：谷价样式" width="320">
-
-</details>
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="docs/preview.svg" alt="展开态：峰价样式" width="300"><br>
+<sub>峰价时段（红）</sub>
+</td>
+<td align="center" width="50%">
+<img src="docs/preview-valley.svg" alt="展开态：谷价样式" width="300"><br>
+<sub>谷价时段（绿）</sub>
+</td>
+</tr>
+</table>
 
 ## 安装
 
