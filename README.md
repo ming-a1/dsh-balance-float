@@ -6,7 +6,14 @@ Host 半边在本地记账（按轮记 token 与费用、轮询余额），浏�
 
 <img src="docs/preview-pill.svg" alt="收起态：胶囊" width="335">
 
-<img src="docs/preview.svg" alt="展开态：卡片" width="320">
+<img src="docs/preview.svg" alt="展开态：峰价样式" width="320">
+
+<details>
+<summary>🟢 点击查看谷价样式（峰价样式见上图）</summary>
+
+<img src="docs/preview-valley.svg" alt="展开态：谷价样式" width="320">
+
+</details>
 
 ## 安装
 
