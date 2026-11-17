@@ -4,6 +4,8 @@ DSH Web UI 的悬浮小窗，实时显示 **API 余额、今日已用、每轮�
 
 Host 半边在本地记账（按轮记 token 与费用、轮询余额），浏览器半边只读快照渲染，API Key 始终不出 Host 进程。
 
+<img src="docs/preview.svg" alt="余额悬浮窗预览" width="360">
+
 ## 安装
 
 已发布到 npm，在插件管理里输入包名即可：
