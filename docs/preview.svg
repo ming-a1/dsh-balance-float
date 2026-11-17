@@ -47,8 +47,8 @@
     <!-- peak window -->
     <circle cx="14" cy="256" r="3.5" fill="#ec1313"/>
     <text x="24" y="261" font-size="12.5" font-weight="600" fill="#0f1115">当前按峰价计费</text>
-    <circle cx="146" cy="252" r="7" fill="none" stroke="#c6c9ce"/>
-    <text x="146" y="256" font-size="9" fill="#61666b" text-anchor="middle">?</text>
+    <circle cx="124" cy="252" r="7" fill="none" stroke="#c6c9ce"/>
+    <text x="124" y="256" font-size="9" fill="#61666b" text-anchor="middle">?</text>
     <rect x="266" y="241" width="42" height="26" rx="4" fill="none" stroke="#ec1313"/>
     <text x="287" y="259" font-size="11" fill="#ec1313" text-anchor="middle">峰价</text>
     <text x="14" y="287" font-size="12.5" fill="#0f1115">距切到谷价 3 小时 28 分 10 秒</text>
@@ -82,8 +82,8 @@
     <text x="14" y="492" font-size="11.5"><tspan fill="#ec1313">峰段 ¥0.81</tspan><tspan fill="#61666b"> · 谷段 ¥0.21</tspan></text>
 
     <text x="14" y="514" font-size="11.5" fill="#61666b">DS Flash</text>
-    <rect x="80" y="509" width="158" height="5" rx="2.5" fill="#c8ccd2"/>
-    <rect x="80" y="509" width="158" height="5" rx="2.5" fill="#43464a"/>
+    <rect x="80" y="509" width="146" height="5" rx="2.5" fill="#c8ccd2"/>
+    <rect x="80" y="509" width="146" height="5" rx="2.5" fill="#43464a"/>
     <text x="268" y="514" font-size="11" fill="#0f1115" text-anchor="end">¥1.02</text>
     <text x="305" y="514" font-size="11" fill="#0f1115" text-anchor="end">100%</text>
 
