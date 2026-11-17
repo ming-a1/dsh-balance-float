@@ -34,40 +34,40 @@
     <text x="15" y="100" font-size="11.5" fill="#61666b">总余额 ¥29.43，已用 ¥1.02</text>
 
     <!-- today -->
-    <text x="15" y="128" font-size="12.5" fill="#61666b">今日已用</text>
+    <text x="15" y="128" font-size="12.5" fill="#0f1115">今日已用</text>
     <text x="305" y="128" font-size="12.5" font-weight="600" fill="#0f1115" text-anchor="end">¥1.02</text>
     <text x="15" y="144" font-size="11.5" fill="#61666b">8 次调用 · 26.25M tokens</text>
     <text x="15" y="166" font-size="11.5"><tspan fill="#61666b">峰段 ¥0.21</tspan><tspan fill="#1a7f37"> · 谷段 ¥0.81</tspan></text>
 
     <!-- this turn -->
-    <text x="15" y="199" font-size="12.5" fill="#61666b">本轮消耗</text>
+    <text x="15" y="199" font-size="12.5" fill="#0f1115">本轮消耗</text>
     <text x="305" y="199" font-size="12.5" font-weight="600" fill="#0f1115" text-anchor="end">¥0.24</text>
     <text x="15" y="217" font-size="11.5" fill="#61666b">14:30 · 4.95M tokens</text>
 
     <!-- peak window -->
     <circle cx="14" cy="256" r="3.5" fill="#1a7f37"/>
-    <text x="24" y="261" font-size="12.5" fill="#0f1115">当前按谷价计费</text>
+    <text x="24" y="261" font-size="12.5" font-weight="600" fill="#0f1115">当前按谷价计费</text>
     <circle cx="146" cy="252" r="7" fill="none" stroke="#c6c9ce"/>
     <text x="146" y="256" font-size="9" fill="#61666b" text-anchor="middle">?</text>
     <rect x="266" y="241" width="42" height="26" rx="4" fill="none" stroke="#1a7f37"/>
     <text x="287" y="259" font-size="11" fill="#1a7f37" text-anchor="middle">谷价</text>
-    <text x="14" y="287" font-size="12.5" fill="#61666b">距切到峰价 2 小时 15 分 03 秒</text>
+    <text x="14" y="287" font-size="12.5" fill="#0f1115">距切到峰价 2 小时 15 分 03 秒</text>
 
     <!-- price table -->
-    <text x="14" y="335" font-size="12.5" font-weight="600" fill="#0f1115">单价<tspan font-weight="400" fill="#61666b"> 元/百万 tokens</tspan><tspan font-weight="400" fill="#61666b"> （</tspan><tspan fill="#1a7f37">谷</tspan><tspan fill="#61666b"> / </tspan><tspan fill="#61666b">峰</tspan><tspan fill="#61666b">）</tspan></text>
+    <text xml:space="preserve" x="14" y="335" font-size="12.5" font-weight="600" fill="#0f1115">单价<tspan font-weight="400" fill="#61666b"> 元/百万 tokens </tspan><tspan font-weight="400" fill="#61666b"> （</tspan><tspan fill="#1a7f37">谷</tspan><tspan fill="#61666b"> / </tspan><tspan fill="#61666b">峰</tspan><tspan fill="#61666b">）</tspan></text>
     <text x="168" y="355" font-size="11" fill="#61666b" text-anchor="end">命中</text>
     <text x="221" y="355" font-size="11" fill="#61666b" text-anchor="end">未命中</text>
     <text x="292" y="355" font-size="11" fill="#61666b" text-anchor="end">输出</text>
 
     <text x="14" y="381" font-size="11.5" fill="#0f1115">DS Flash</text>
-    <text x="168" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">0.02</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">0.04</tspan></text>
-    <text x="221" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">1</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">2</tspan></text>
-    <text x="292" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">4</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">8</tspan></text>
+    <text xml:space="preserve" x="168" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">0.02</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">0.04</tspan></text>
+    <text xml:space="preserve" x="221" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">1</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">2</tspan></text>
+    <text xml:space="preserve" x="292" y="381" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">4</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">8</tspan></text>
 
     <text x="14" y="404" font-size="11.5" fill="#0f1115">DS v4 Pro</text>
-    <text x="168" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">0.15</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">0.3</tspan></text>
-    <text x="221" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">4.5</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">9</tspan></text>
-    <text x="292" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">13.5</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">27</tspan></text>
+    <text xml:space="preserve" x="168" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">0.15</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">0.3</tspan></text>
+    <text xml:space="preserve" x="221" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">4.5</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">9</tspan></text>
+    <text xml:space="preserve" x="292" y="404" font-size="11.5" text-anchor="end"><tspan fill="#1a7f37">13.5</tspan><tspan fill="#8b9095"> / </tspan><tspan fill="#61666b">27</tspan></text>
 
     <!-- trend -->
     <text x="14" y="450" font-size="12.5" font-weight="600" fill="#0f1115">用量趋势</text>
@@ -78,14 +78,14 @@
     <text x="272" y="450" font-size="11.5" fill="#61666b">本月</text>
 
     <text x="14" y="473" font-size="15" font-weight="600" fill="#0f1115">¥1.02</text>
-    <text x="56" y="473" font-size="11.5" fill="#61666b">8 次</text>
+    <text x="68" y="473" font-size="11.5" fill="#61666b">8 次</text>
     <text x="14" y="492" font-size="11.5"><tspan fill="#61666b">峰段 ¥0.21</tspan><tspan fill="#1a7f37"> · 谷段 ¥0.81</tspan></text>
 
     <text x="14" y="514" font-size="11.5" fill="#61666b">DS Flash</text>
     <rect x="80" y="509" width="158" height="5" rx="2.5" fill="#c8ccd2"/>
     <rect x="80" y="509" width="158" height="5" rx="2.5" fill="#43464a"/>
-    <text x="270" y="514" font-size="11.5" fill="#0f1115" text-anchor="end">¥1.02</text>
-    <text x="305" y="514" font-size="11.5" fill="#0f1115" text-anchor="end">100%</text>
+    <text x="268" y="514" font-size="11" fill="#0f1115" text-anchor="end">¥1.02</text>
+    <text x="305" y="514" font-size="11" fill="#0f1115" text-anchor="end">100%</text>
 
     <!-- footer -->
     <rect x="14" y="532" width="78" height="18" rx="4" fill="none" stroke="#c6c9ce"/>

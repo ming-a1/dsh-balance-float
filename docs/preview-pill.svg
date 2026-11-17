@@ -3,10 +3,10 @@
   <circle cx="15" cy="18" r="3.5" fill="#e02424"/>
   <text x="25" y="23" font-size="12.5" fill="#61666b">余额</text>
   <text x="55" y="23" font-size="12.5" font-weight="600" fill="#0f1115">¥29.43</text>
-  <line x1="100" y1="11" x2="100" y2="25" stroke="#d5d8dd"/>
-  <text x="110" y="23" font-size="12.5" fill="#61666b">今日</text>
-  <text x="140" y="23" font-size="12.5" font-weight="600" fill="#0f1115">¥1.02</text>
-  <line x1="178" y1="11" x2="178" y2="25" stroke="#d5d8dd"/>
-  <text x="188" y="23" font-size="12.5" font-weight="600" fill="#e02424">峰价</text>
-  <text x="220" y="23" font-size="12.5" font-weight="600" fill="#0f1115">3小时27分50秒</text>
+  <line x1="108" y1="11" x2="108" y2="25" stroke="#b9bec6"/>
+  <text x="116" y="23" font-size="12.5" fill="#61666b">今日</text>
+  <text x="146" y="23" font-size="12.5" font-weight="600" fill="#0f1115">¥1.02</text>
+  <line x1="184" y1="11" x2="184" y2="25" stroke="#b9bec6"/>
+  <text x="194" y="23" font-size="12.5" font-weight="600" fill="#e02424">峰价</text>
+  <text x="226" y="23" font-size="12.5" font-weight="600" fill="#0f1115">3小时27分50秒</text>
 </svg>
