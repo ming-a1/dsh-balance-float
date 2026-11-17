@@ -36,11 +36,10 @@ window.__ModuleLoader__.load({
     // panel only links out to the console.
     const TOPUP_URL = 'https://platform.deepseek.com/top_up';
     const APPEARANCE_KEY = 'dsh.balance-float.appearance';
-    // `bg` is transparency in percent (0 = solid token background), the other
-    // two are strength in percent.
-    // 16 is the pill's half height: the default keeps the capsule look while the
-    // card gets a matching 16px corner.
-    const DEFAULT_APPEARANCE = { bg: 0, border: 100, shadow: 100, radius: 16, dockBall: true };
+    // `bg` is transparency in percent (0 = solid token background) and `shadow`
+    // is strength in percent; `radius` is the corner in px. Defaults are the
+    // flat look: no transparency, no shadow, a 5px corner.
+    const DEFAULT_APPEARANCE = { bg: 0, shadow: 0, radius: 5, dockBall: true };
     // Docking: a drop this close to a side edge turns the pill into a square
     // ball pinned DOCK_MARGIN px from that edge.
     const DOCK_ZONE = 56;
@@ -134,7 +133,6 @@ window.__ModuleLoader__.load({
       settings: '外观设置',
       'settings.open': '外观设置',
       'settings.bg': '背景透明度',
-      'settings.border': '边框',
       'settings.shadow': '阴影',
       'settings.radius': '圆角',
       'settings.dock': '贴边收成小球',
@@ -228,7 +226,6 @@ window.__ModuleLoader__.load({
       settings: 'Appearance',
       'settings.open': 'Appearance',
       'settings.bg': 'Background transparency',
-      'settings.border': 'Border',
       'settings.shadow': 'Shadow',
       'settings.radius': 'Corner radius',
       'settings.dock': 'Ball at the edge',
@@ -247,7 +244,7 @@ window.__ModuleLoader__.load({
       '.dbf-root{position:fixed;z-index:200;pointer-events:auto;font-family:inherit;color:var(--dsw-alias-label-primary)}',
       '.dbf-surface{position:relative;isolation:isolate}',
       '.dbf-surface::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--dsw-alias-bg-overlay);opacity:var(--dbf-bg,1);z-index:-1;pointer-events:none}',
-      '.dbf-surface::after{content:"";position:absolute;inset:0;border-radius:inherit;border:.5px solid var(--dsw-alias-border-l1);opacity:var(--dbf-border,1);pointer-events:none}',
+      '.dbf-surface::after{content:"";position:absolute;inset:0;border-radius:inherit;border:.5px solid var(--dsw-alias-border-l1);pointer-events:none}',
       '@keyframes dbf-open-down{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}',
       '@keyframes dbf-open-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}',
       '@keyframes dbf-collapse-down{to{opacity:0;transform:translateY(-14px)}}',
@@ -534,7 +531,6 @@ window.__ModuleLoader__.load({
         };
         return {
           bg: pick(parsed?.bg, 0, 90, DEFAULT_APPEARANCE.bg),
-          border: pick(parsed?.border, 0, 100, DEFAULT_APPEARANCE.border),
           shadow: pick(parsed?.shadow, 0, 100, DEFAULT_APPEARANCE.shadow),
           radius: pick(parsed?.radius, 0, 20, DEFAULT_APPEARANCE.radius),
           dockBall: parsed?.dockBall !== false,
@@ -1212,7 +1208,6 @@ window.__ModuleLoader__.load({
         ...style,
         '--dbf-origin': dir === 'down' ? '50% 0%' : '50% 100%',
         '--dbf-bg': String((100 - appearance.bg) / 100),
-        '--dbf-border': String(appearance.border / 100),
         '--dbf-shadow': String(appearance.shadow / 100),
         '--dbf-radius': String(appearance.radius),
       };
@@ -1512,7 +1507,6 @@ window.__ModuleLoader__.load({
                                 // The menu lives in <body>, outside the root that
                                 // carries the appearance variables.
                                 '--dbf-bg': String((100 - appearance.bg) / 100),
-                                '--dbf-border': String(appearance.border / 100),
                                 '--dbf-shadow': String(appearance.shadow / 100),
                               },
                             },
@@ -1818,7 +1812,6 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dbf-body' },
             settingsRow('bg', t('settings.bg'), appearance.bg, 90, '%'),
-            settingsRow('border', t('settings.border'), appearance.border, 100, '%'),
             settingsRow('shadow', t('settings.shadow'), appearance.shadow, 100, '%'),
             settingsRow('radius', t('settings.radius'), appearance.radius, 20, 'px'),
             h(
