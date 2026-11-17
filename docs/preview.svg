@@ -46,9 +46,9 @@
 
     <!-- peak window -->
     <circle cx="14" cy="256" r="3.5" fill="#ec1313"/>
-    <text x="24" y="261" font-size="12.5" font-weight="600" fill="#0f1115">当前按峰价计费</text>
-    <circle cx="124" cy="252" r="7" fill="none" stroke="#c6c9ce"/>
-    <text x="124" y="256" font-size="9" fill="#61666b" text-anchor="middle">?</text>
+    <text x="24" y="261" font-size="12.5" font-weight="600" fill="#ec1313">当前按峰价计费</text>
+    <rect x="123" y="249" width="15" height="15" rx="4" fill="none" stroke="#d2d5da"/>
+    <text x="130.5" y="260" font-size="9" fill="#61666b" text-anchor="middle">?</text>
     <rect x="266" y="241" width="42" height="26" rx="4" fill="none" stroke="#ec1313"/>
     <text x="287" y="259" font-size="11" fill="#ec1313" text-anchor="middle">峰价</text>
     <text x="14" y="287" font-size="12.5" fill="#0f1115">距切到谷价 3 小时 28 分 10 秒</text>
