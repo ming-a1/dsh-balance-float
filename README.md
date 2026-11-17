@@ -70,4 +70,4 @@ refreshSeconds: 20     # 余额轮询间隔
 apiKeyRef: DEEPSEEK_API_KEY
 ```
 
-[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+<a href="https://github.com/deepseek-ai/deepseek-harness"><img src="docs/dsh-badge.png" alt="powered by dsh" width="121" height="20"></a>
