@@ -16,8 +16,6 @@ Host 半边在本地记账（按轮记 token 与费用、轮询余额），浏�
 @lls-a1/dsh-balance-float
 ```
 
-本地开发用 `link:/path/to/balance-float` 挂载，改完 `client.js` 刷新页面生效，改 `index.js` 需重载插件。
-
 ## 功能
 
 **余额与用量**
