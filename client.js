@@ -711,16 +711,29 @@ window.__ModuleLoader__.load({
       return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value);
     }
 
-    /** 余额卡片里的一行入口：火山方舟 · 档位 ›（刻意不显示余额）。 */
+    /** 余额卡片里的一行入口：火山方舟 · 档位 · 账户余额 ›（余额为 0 时不占位）。 */
     function ArkQuotaEntry({ t, onOpen }) {
       const state = useArkSummary();
       if (state.status === 'absent') return null;
       const tier = state.data?.agentPlan?.tier ?? null;
+      const balance = state.data?.balance?.available;
+      // 只有真正有钱（或欠费）时才占位：0 与精度内的 0 都不显示。
+      const showBalance = typeof balance === 'number' && Number.isFinite(balance) && Math.abs(balance) > 0.01;
       return h(
         'button',
-        { type: 'button', className: 'dbf-ark-entry', 'aria-label': t('ark.title'), onClick: onOpen },
+        {
+          type: 'button',
+          className: 'dbf-ark-entry',
+          'aria-label': showBalance ? t('ark.title') + ' · ' + t('ark.balance') + ' ¥' + money(balance) : t('ark.title'),
+          onClick: onOpen,
+        },
         h('span', { className: 'dbf-row-title' }, t('ark.title'), tier ? h('span', { className: 'dbf-ark-tier' }, tier) : null),
-        h('span', { className: 'dbf-ark-entry-side', 'aria-hidden': true }, '›'),
+        h(
+          'span',
+          { className: 'dbf-ark-entry-side' },
+          showBalance ? h('span', { className: 'dbf-num' }, '¥' + money(balance)) : null,
+          h('span', { 'aria-hidden': true }, '›'),
+        ),
       );
     }
 
