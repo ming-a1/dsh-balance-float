@@ -1,4 +1,4 @@
-# 余额悬浮窗（balance-float）
+# DS API余额（balance-float）
 
 DSH Web UI 的悬浮小窗，实时显示 **API 余额、今日已用、每轮消耗和峰谷定价**。
 
