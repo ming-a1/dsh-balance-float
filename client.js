@@ -368,7 +368,8 @@ window.__ModuleLoader__.load({
       '.dbf-ark-tier{font-size:10px;line-height:16px;padding:0 5px;border-radius:4px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent)}',
       '.dbf-ark-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:9px 11px;border:0;border-bottom:.5px solid var(--dsw-alias-border-l1);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}',
       '.dbf-ark-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}',
-      '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;line-height:1;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-ark-chevron{display:block;flex:none;opacity:.75}',
       '.dbf-ark-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.22);z-index:29}',
       '.dbf-arkpanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:72vh;overflow:auto;z-index:30}',
       '.dbf-arkpanel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;cursor:move;touch-action:none;user-select:none}',
@@ -732,7 +733,25 @@ window.__ModuleLoader__.load({
           'span',
           { className: 'dbf-ark-entry-side' },
           showBalance ? h('span', { className: 'dbf-num' }, '¥' + money(balance)) : null,
-          h('span', { 'aria-hidden': true }, '›'),
+          h(
+            'svg',
+            {
+              className: 'dbf-ark-chevron',
+              width: 12,
+              height: 12,
+              viewBox: '0 0 12 12',
+              'aria-hidden': true,
+              focusable: 'false',
+            },
+            h('path', {
+              d: 'M4.5 3.4 7.7 6l-3.2 2.6',
+              fill: 'none',
+              stroke: 'currentColor',
+              'stroke-width': 1.4,
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round',
+            }),
+          ),
         ),
       );
     }
