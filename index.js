@@ -19,6 +19,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { loadState, resolvePaths, saveState } from './lib/ledger.js'
 import { buildSnapshot } from './lib/snapshot.js'
 import { createTracker } from './lib/tracker.js'
+import { registerArkQuota } from './lib/ark-quota-api.js'
 
 /**
  * This package's own version, shown in the widget footer.
@@ -103,7 +104,7 @@ async function checkUpdate({ fresh = false } = {}) {
 export const name = 'balance-float'
 
 /** Services this plugin cannot work without (`credentials` is read optionally). */
-export const inject = ['webServer', 'timer']
+export const inject = ['webServer', 'timer', 'credentials']
 
 const ROUTE = '/balance-float/snapshot'
 const ROUTE_UPDATE = '/balance-float/update'
@@ -288,4 +289,6 @@ export function apply(ctx, config) {
 
   // First reading right after activation; the interval below covers the rest.
   schedulePoll(1200)
+
+  ctx.effect(() => registerArkQuota(ctx), 'balance-float: ark quota routes')
 }

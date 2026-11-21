@@ -105,6 +105,27 @@ window.__ModuleLoader__.load({
       'price.miss': '未命中',
       'price.out': '输出',
       history: '用量趋势',
+      'ark.title': '火山方舟',
+      'ark.balance': '余额',
+      'ark.unconfigured': '未配置 AK/SK，可在下面的设置里填写',
+      'ark.unconfigured.short': '未配置 AK/SK',
+      'ark.error': '额度读取失败',
+      'ark.used': '已用 {percent}',
+      'ark.reset': '{time}后重置',
+      'ark.reset.soon': '即将重置',
+      'ark.updated': '更新于 {time} · 60 秒自动刷新',
+      'ark.close': '关闭火山额度面板',
+      'ark.settings.title': '火山方舟设置',
+      'ark.settings.show': '显示火山方舟入口',
+      'ark.settings.hint': '关闭后余额小窗里不再出现火山方舟这一行。',
+      'ark.settings.none': '尚未配置 AK/SK',
+      'ark.settings.current': '当前 AK：{ak}',
+      'ark.settings.save': '保存 AK/SK',
+      'ark.settings.saving': '保存中…',
+      'ark.settings.saved': '已保存',
+      'ark.settings.clear': '清除',
+      'ark.settings.cleared': '已清除',
+      'ark.settings.failed': '保存失败',
       'history.window.today': '今天',
       'history.yesterday': '昨天',
       'history.window.7': '近7天',
@@ -198,6 +219,27 @@ window.__ModuleLoader__.load({
       'price.miss': 'Miss',
       'price.out': 'Out',
       history: 'Usage trend',
+      'ark.title': 'Volcengine Ark',
+      'ark.balance': 'Balance',
+      'ark.unconfigured': 'No AK/SK yet. Fill it in the settings below.',
+      'ark.unconfigured.short': 'No AK/SK',
+      'ark.error': 'Quota unavailable',
+      'ark.used': '{percent} used',
+      'ark.reset': 'resets in {time}',
+      'ark.reset.soon': 'resets soon',
+      'ark.updated': 'Updated {time} · refreshes every 60s',
+      'ark.close': 'Close the Volcengine Ark panel',
+      'ark.settings.title': 'Volcengine Ark',
+      'ark.settings.show': 'Show the Volcengine Ark entry',
+      'ark.settings.hint': 'When off, the Ark row disappears from the balance card.',
+      'ark.settings.none': 'No AK/SK configured yet',
+      'ark.settings.current': 'AK {ak}',
+      'ark.settings.save': 'Save AK/SK',
+      'ark.settings.saving': 'Saving…',
+      'ark.settings.saved': 'Saved',
+      'ark.settings.clear': 'Clear',
+      'ark.settings.cleared': 'Cleared',
+      'ark.settings.failed': 'Save failed',
       'history.window.today': 'Today',
       'history.yesterday': 'Yesterday',
       'history.window.7': '7d',
@@ -319,6 +361,28 @@ window.__ModuleLoader__.load({
       '.dbf-sub{margin-top:3px;color:var(--dsw-alias-label-secondary)}',
       '.dbf-row{display:flex;align-items:center;gap:8px;justify-content:space-between}',
       '.dbf-row-title{display:flex;align-items:center;gap:7px;font-weight:600}',
+      '.dbf-settings-foot{flex:none;padding:8px 11px;border-top:.5px solid var(--dsw-alias-border-l1);border-bottom:0}',
+      '.dbf-ark-section{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}',
+      '.dbf-ark-chev{color:var(--dsw-alias-label-tertiary);transition:transform .15s}',
+      '.dbf-ark-section.is-open .dbf-ark-chev{transform:rotate(90deg)}',
+      '.dbf-ark-tier{font-size:10px;line-height:16px;padding:0 5px;border-radius:4px;color:var(--dsw-alias-state-business-primary);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 12%,transparent)}',
+      '.dbf-ark-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:9px 11px;border:0;border-bottom:.5px solid var(--dsw-alias-border-l1);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}',
+      '.dbf-ark-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}',
+      '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-ark-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.22);z-index:29}',
+      '.dbf-arkpanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:72vh;overflow:auto;z-index:30}',
+      '.dbf-arkpanel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;cursor:move;touch-action:none;user-select:none}',
+      '.dbf-arkpanel-body{padding:0 11px 11px}',
+      '.dbf-ark-foot{padding:7px 11px;border-top:.5px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-tertiary);font-size:11px}',
+      '.dbf-ark-row{margin-top:11px}',
+      '.dbf-ark-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px}',
+      '.dbf-ark-nums{display:flex;align-items:baseline;gap:5px;margin-top:3px;font-variant-numeric:tabular-nums}',
+      '.dbf-ark-nums b{font-size:13px;font-weight:600}',
+      '.dbf-ark-track{position:relative;height:6px;margin-top:5px;border-radius:99px;background:repeating-linear-gradient(90deg,var(--dsw-alias-border-l2) 0 3px,transparent 3px 6px);overflow:hidden}',
+      '.dbf-ark-fill{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--dsw-alias-state-business-primary);transition:width .3s}',
+      '.dbf-ark-fill.is-full{background:var(--dsw-alias-state-error-primary)}',
+      '.dbf-ark-reset{margin-top:4px;font-size:11px;color:var(--dsw-alias-label-tertiary)}',
+      '.dbf-ark-hint{margin-top:8px;color:var(--dsw-alias-label-secondary)}',
       '.dbf-grid{display:grid;grid-template-columns:64px 1fr;gap:4px 8px;margin-top:7px;color:var(--dsw-alias-label-secondary)}',
       '.dbf-grid b{font-weight:600;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;text-align:right}',
       '.dbf-table{width:100%;margin-top:7px;border-collapse:collapse;font-size:11px;line-height:16px}',
@@ -594,6 +658,443 @@ window.__ModuleLoader__.load({
     const shared = { frame: null, dir: 'up', dock: '' };
 
     /** The floating pill and its expanded card. */
+    // ---------------------------------------------------------------------
+    // 火山方舟额度（AK/SK 查余额 + Agent Plan / Coding Plan 窗口）
+    // ---------------------------------------------------------------------
+    /** 共享数据：入口、弹层各取一份快照；Host 侧有 60 秒缓存。 */
+    function useArkSummary() {
+      const [state, setState] = useState({ status: 'loading', data: null });
+      const [now, setNow] = useState(() => Date.now());
+      useEffect(() => {
+        let alive = true;
+        const load = async () => {
+          try {
+            const response = await fetch('/ark-quota/summary');
+            if (!response.ok) throw new Error('http ' + response.status);
+            const payload = await response.json();
+            if (!alive) return;
+            if (payload.ok === false && payload.code === 'missing-credential') {
+              setState({ status: 'unconfigured', data: null });
+            } else if (payload.ok === false || !payload.summary) {
+              setState({ status: 'error', data: null });
+            } else {
+              setState({ status: 'ok', data: payload.summary });
+            }
+          } catch {
+            if (alive) setState({ status: 'absent', data: null });
+          }
+        };
+        const onChanged = () => {
+          void load();
+        };
+        load();
+        window.addEventListener('dsh-ark-quota-changed', onChanged);
+        const timer = setInterval(load, 60000);
+        const ticker = setInterval(() => setNow(Date.now()), 30000);
+        return () => {
+          alive = false;
+          window.removeEventListener('dsh-ark-quota-changed', onChanged);
+          clearInterval(timer);
+          clearInterval(ticker);
+        };
+      }, []);
+      return { ...state, now };
+    }
+
+    /** 一万以上用「万」，其余千分位。 */
+    function arkAmount(value) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
+      if (Math.abs(value) >= 10000) {
+        const wan = value / 10000;
+        return (Number.isInteger(wan) ? String(wan) : wan.toFixed(2).replace(/\.?0+$/, '')) + '万';
+      }
+      return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value);
+    }
+
+    /** 余额卡片里的一行入口：火山方舟 · 档位 ›（刻意不显示余额）。 */
+    function ArkQuotaEntry({ t, onOpen }) {
+      const state = useArkSummary();
+      if (state.status === 'absent') return null;
+      const tier = state.data?.agentPlan?.tier ?? null;
+      return h(
+        'button',
+        { type: 'button', className: 'dbf-ark-entry', 'aria-label': t('ark.title'), onClick: onOpen },
+        h('span', { className: 'dbf-row-title' }, t('ark.title'), tier ? h('span', { className: 'dbf-ark-tier' }, tier) : null),
+        h('span', { className: 'dbf-ark-entry-side', 'aria-hidden': true }, '›'),
+      );
+    }
+
+    /** 独立弹层：余额 + 各窗口用量；标题栏可拖动，位置记住并夹在视口内。 */
+    function ArkQuotaPanel({ t, onClose }) {
+      const state = useArkSummary();
+      const [pos, setPos] = useState(() => {
+        try {
+          const raw = localStorage.getItem('dsh.ark-panel.pos');
+          const parsed = raw ? JSON.parse(raw) : null;
+          return Number.isFinite(parsed?.left) && Number.isFinite(parsed?.top) ? parsed : null;
+        } catch {
+          return null;
+        }
+      });
+      const panelRef = useRef(null);
+      const dragRef = useRef(null);
+      const posRef = useRef(pos);
+
+      useEffect(() => {
+        posRef.current = pos;
+      }, [pos]);
+
+      // 记住的位置可能来自不同窗口尺寸：按面板真实尺寸夹回可视区。
+      useEffect(() => {
+        const clampIntoView = () => {
+          const node = panelRef.current;
+          if (!node) return;
+          const rect = node.getBoundingClientRect();
+          const maxLeft = Math.max(4, window.innerWidth - rect.width - 4);
+          const maxTop = Math.max(4, window.innerHeight - rect.height - 4);
+          setPos((current) => {
+            const base = current ?? { left: rect.left, top: rect.top };
+            const left = Math.min(Math.max(4, base.left), maxLeft);
+            const top = Math.min(Math.max(4, base.top), maxTop);
+            if (current !== null && left === current.left && top === current.top) return current;
+            posRef.current = { left, top };
+            return { left, top };
+          });
+        };
+        clampIntoView();
+        // 卡片有 240ms 入场动画，量到的高度偏小，动画结束后再夹一次。
+        const timer = setTimeout(clampIntoView, 350);
+        window.addEventListener('resize', clampIntoView);
+        return () => {
+          clearTimeout(timer);
+          window.removeEventListener('resize', clampIntoView);
+        };
+      }, []);
+
+      useEffect(() => {
+        const onKey = (event) => {
+          if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
+
+      const onHeaderDown = (event) => {
+        if (event.button !== 0) return;
+        // 标题栏里的按钮（关闭）自己处理点击，否则 pointer capture 会吞掉 click。
+        if (event.target && typeof event.target.closest === 'function' && event.target.closest('button')) return;
+        const rect = event.currentTarget.closest('.dbf-arkpanel')?.getBoundingClientRect();
+        if (!rect) return;
+        dragRef.current = {
+          id: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          left: rect.left,
+          top: rect.top,
+          w: rect.width,
+          h: rect.height,
+          moved: false,
+        };
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+      };
+      const onHeaderMove = (event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.id !== event.pointerId) return;
+        const dx = event.clientX - drag.x;
+        const dy = event.clientY - drag.y;
+        if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 3) return;
+        drag.moved = true;
+        const left = Math.min(Math.max(4, drag.left + dx), Math.max(4, window.innerWidth - drag.w - 4));
+        const top = Math.min(Math.max(4, drag.top + dy), Math.max(4, window.innerHeight - drag.h - 4));
+        posRef.current = { left, top };
+        setPos({ left, top });
+      };
+      const onHeaderUp = (event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.id !== event.pointerId) return;
+        dragRef.current = null;
+        if (!drag.moved) return;
+        try {
+          if (posRef.current) localStorage.setItem('dsh.ark-panel.pos', JSON.stringify(posRef.current));
+        } catch {
+          // 隐私模式下 localStorage 不可写：位置只在本次打开期间有效。
+        }
+      };
+
+      const plan = state.data?.agentPlan ?? null;
+      const bars = Array.isArray(plan?.bars) ? plan.bars : [];
+      const tier = plan?.tier ?? null;
+      const updatedAt = state.data?.at
+        ? new Date(state.data.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        : '';
+      const panelStyle = pos ? { left: pos.left + 'px', top: pos.top + 'px', transform: 'none' } : undefined;
+
+      const body =
+        state.status === 'loading'
+          ? h('div', { className: 'dbf-ark-hint' }, t('loading'))
+          : state.status === 'unconfigured'
+            ? h('div', { className: 'dbf-ark-hint' }, t('ark.unconfigured'))
+            : state.status === 'error'
+              ? h('div', { className: 'dbf-ark-hint' }, t('ark.error'))
+              : h(
+                  'div',
+                  null,
+                  h(
+                    'div',
+                    { className: 'dbf-ark-line', style: { marginTop: '4px' } },
+                    h('span', { className: 'dbf-label' }, t('ark.balance')),
+                    h('span', { className: 'dbf-num' }, '¥' + money(state.data?.balance?.available)),
+                  ),
+                  bars.map((bar, index) =>
+                    h(
+                      'div',
+                      { className: 'dbf-ark-row', key: (bar.label ?? 'window') + '-' + index },
+                      h(
+                        'div',
+                        { className: 'dbf-ark-line' },
+                        h('span', { className: 'dbf-label' }, bar.label),
+                        h(
+                          'span',
+                          { className: 'dbf-sub' },
+                          typeof bar.percent === 'number' ? t('ark.used', { percent: bar.percent.toFixed(1) + '%' }) : '',
+                        ),
+                      ),
+                      bar.used !== null && bar.used !== undefined && bar.total !== null && bar.total !== undefined
+                        ? h(
+                            'div',
+                            { className: 'dbf-ark-nums' },
+                            h('b', null, arkAmount(bar.used)),
+                            h('span', { className: 'dbf-sub' }, '/ ' + arkAmount(bar.total)),
+                          )
+                        : null,
+                      typeof bar.percent === 'number'
+                        ? h(
+                            'div',
+                            { className: 'dbf-ark-track' },
+                            h('div', {
+                              className: 'dbf-ark-fill' + (bar.percent >= 100 ? ' is-full' : ''),
+                              style: { width: Math.max(1, Math.min(100, bar.percent)) + '%' },
+                            }),
+                          )
+                        : null,
+                      bar.resetAt
+                        ? h(
+                            'div',
+                            { className: 'dbf-ark-reset' },
+                            bar.resetAt > state.now
+                              ? t('ark.reset', { time: duration(t, bar.resetAt - state.now) })
+                              : t('ark.reset.soon'),
+                          )
+                        : null,
+                    ),
+                  ),
+                );
+
+      return h(
+        React.Fragment,
+        null,
+        h('div', { className: 'dbf-ark-backdrop', 'aria-hidden': true, onClick: onClose }),
+        h(
+          'div',
+          {
+            ref: panelRef,
+            className: 'dbf-card dbf-surface dbf-arkpanel',
+            role: 'dialog',
+            'aria-label': t('ark.title'),
+            style: panelStyle,
+          },
+          h(
+            'div',
+            {
+              className: 'dbf-arkpanel-head',
+              onPointerDown: onHeaderDown,
+              onPointerMove: onHeaderMove,
+              onPointerUp: onHeaderUp,
+              onPointerCancel: onHeaderUp,
+            },
+            h('span', { className: 'dbf-row-title' }, t('ark.title'), tier ? h('span', { className: 'dbf-ark-tier' }, tier) : null),
+            h('button', { type: 'button', className: 'dbf-icon', 'aria-label': t('ark.close'), title: t('ark.close'), onClick: onClose }, '×'),
+          ),
+          h('div', { className: 'dbf-arkpanel-body' }, body),
+          h('div', { className: 'dbf-ark-foot' }, updatedAt ? t('ark.updated', { time: updatedAt }) : ''),
+        ),
+      );
+    }
+
+    /** 外观设置里的火山方舟区块：默认收起；展开后是入口开关 + AK/SK 保存/清除。 */
+    function ArkSettings({ t, enabled, onChange }) {
+      const [open, setOpen] = useState(false);
+      const [cred, setCred] = useState({ loading: true, configured: false, akMasked: null, absent: false });
+      const [ak, setAk] = useState('');
+      const [sk, setSk] = useState('');
+      const [busy, setBusy] = useState(false);
+      const [msg, setMsg] = useState('');
+
+      const loadCred = async () => {
+        try {
+          const response = await fetch('/ark-quota/credentials');
+          if (!response.ok) throw new Error('http ' + response.status);
+          const payload = await response.json();
+          setCred({ loading: false, configured: payload.configured === true, akMasked: payload.akMasked ?? null, absent: false });
+        } catch {
+          setCred({ loading: false, configured: false, akMasked: null, absent: true });
+        }
+      };
+
+      useEffect(() => {
+        if (open) loadCred();
+      }, [open]);
+
+      const notifyChanged = () => {
+        try {
+          window.dispatchEvent(new Event('dsh-ark-quota-changed'));
+        } catch {
+          // 非浏览器环境忽略。
+        }
+      };
+
+      const save = async () => {
+        setBusy(true);
+        setMsg('');
+        try {
+          const response = await fetch('/ark-quota/credentials', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ accessKeyId: ak.trim(), secretAccessKey: sk.trim() }),
+          });
+          const payload = await response.json();
+          if (payload.ok !== true) throw new Error(payload.message ?? 'failed');
+          setAk('');
+          setSk('');
+          setMsg(t('ark.settings.saved'));
+          notifyChanged();
+          await loadCred();
+        } catch {
+          setMsg(t('ark.settings.failed'));
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const clear = async () => {
+        setBusy(true);
+        setMsg('');
+        try {
+          const response = await fetch('/ark-quota/credentials', { method: 'DELETE' });
+          const payload = await response.json();
+          if (payload.ok !== true) throw new Error(payload.message ?? 'failed');
+          setAk('');
+          setSk('');
+          setMsg(t('ark.settings.cleared'));
+          notifyChanged();
+          await loadCred();
+        } catch {
+          setMsg(t('ark.settings.failed'));
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      const statusText = cred.absent
+        ? t('ark.error')
+        : cred.loading
+          ? t('loading')
+          : cred.configured
+            ? t('ark.settings.current', { ak: cred.akMasked ?? '' })
+            : t('ark.settings.none');
+
+      const inputStyle = {
+        width: '100%',
+        height: 30,
+        padding: '0 8px',
+        fontSize: 12,
+        borderRadius: 7,
+        border: '.5px solid var(--dsw-alias-border-l3)',
+        background: 'var(--dsw-alias-bg-layer-1)',
+        color: 'var(--dsw-alias-label-primary)',
+        boxSizing: 'border-box',
+      };
+
+      return h(
+        'div',
+        { className: 'dbf-setting' },
+        h(
+          'button',
+          {
+            type: 'button',
+            className: 'dbf-ark-section' + (open ? ' is-open' : ''),
+            'aria-expanded': open ? 'true' : 'false',
+            onClick: () => setOpen(!open),
+          },
+          h('span', { className: 'dbf-label' }, t('ark.settings.title')),
+          h('span', { className: 'dbf-ark-chev', 'aria-hidden': true }, '›'),
+        ),
+        open
+          ? h(
+              'div',
+              { style: { marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' } },
+              h(
+                'div',
+                { className: 'dbf-row' },
+                h('span', { className: 'dbf-label' }, t('ark.settings.show')),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'dbf-switch' + (enabled ? ' is-on' : ''),
+                    role: 'switch',
+                    'aria-checked': enabled ? 'true' : 'false',
+                    'aria-label': t('ark.settings.show'),
+                    onClick: () => onChange(!enabled),
+                  },
+                  h('span', { className: 'dbf-switch-knob' }),
+                ),
+              ),
+              h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('ark.settings.hint')),
+              h(
+                'div',
+                { style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' } },
+                h('span', { className: 'dbf-sub' }, statusText),
+                cred.configured
+                  ? h(
+                      'button',
+                      { type: 'button', className: 'dbf-textbtn', style: { fontSize: '11px' }, disabled: busy, onClick: clear },
+                      t('ark.settings.clear'),
+                    )
+                  : null,
+              ),
+              h('input', {
+                style: inputStyle,
+                type: 'text',
+                placeholder: 'Access Key ID',
+                spellCheck: false,
+                autoComplete: 'off',
+                value: ak,
+                onChange: (event) => setAk(event.target.value),
+              }),
+              h('input', {
+                style: inputStyle,
+                type: 'password',
+                placeholder: 'Secret Access Key',
+                autoComplete: 'new-password',
+                value: sk,
+                onChange: (event) => setSk(event.target.value),
+              }),
+              h(
+                'div',
+                { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                h(
+                  'button',
+                  { type: 'button', className: 'dbf-textbtn', disabled: busy || ak.trim() === '' || sk.trim() === '', onClick: save },
+                  busy ? t('ark.settings.saving') : t('ark.settings.save'),
+                ),
+                msg ? h('span', { className: 'dbf-sub' }, msg) : null,
+              ),
+            )
+          : null,
+      );
+    }
+
     function BalanceFloat(props) {
       const t = props.t;
       const openPluginPage = typeof props.openPluginPage === 'function' ? props.openPluginPage : () => {};
@@ -605,6 +1106,24 @@ window.__ModuleLoader__.load({
       const [refreshState, setRefreshState] = useState('idle');
       const [open, setOpen] = useState(false);
       const [settingsOpen, setSettingsOpen] = useState(false);
+      const [arkOpen, setArkOpen] = useState(false);
+      // 默认关闭：用户在外观设置里打开后才出现火山方舟入口。
+      const [arkEnabled, setArkEnabled] = useState(() => {
+        try {
+          return localStorage.getItem('dsh.ark-quota.show') === 'on';
+        } catch (cause) {
+          return false;
+        }
+      });
+      const setArkEnabledPersist = (value) => {
+        setArkEnabled(value);
+        try {
+          localStorage.setItem('dsh.ark-quota.show', value ? 'on' : 'off');
+        } catch (cause) {
+          // 隐私模式下写不了 localStorage：开关只在本次打开期间有效。
+        }
+        if (!value) setArkOpen(false);
+      };
       const [leaving, setLeaving] = useState(false);
       const [appearance, setAppearance] = useState(readAppearance);
       const [frame, setFrame] = useState(() => shared.frame ?? readPosition());
@@ -1748,7 +2267,7 @@ window.__ModuleLoader__.load({
         } else if (dayBlock !== null) {
           body.push(dayBlock);
         } else {
-          body.push(balanceBlock, peakBlock, priceTable, historyBlock);
+          body.push(balanceBlock, arkEnabled ? h(ArkQuotaEntry, { t, onOpen: () => setArkOpen(true) }) : null, peakBlock, priceTable, historyBlock);
         }
 
         card = h(
@@ -1807,13 +2326,14 @@ window.__ModuleLoader__.load({
         settingsPanel = h(
           'div',
           { key: 'settings', className: 'dbf-card dbf-surface' + (leaving ? ' dbf-leaving' : ''), style: cardStyle, role: 'dialog', 'aria-label': t('settings') },
-          h('div', { className: 'dbf-head is-static' }, h('span', { className: 'dbf-head-title' }, t('settings'))),
+          h('div', { className: 'dbf-head', style: { cursor: 'move' }, onPointerDown }, h('span', { className: 'dbf-head-title' }, t('settings'))),
           h(
             'div',
             { className: 'dbf-body' },
             settingsRow('bg', t('settings.bg'), appearance.bg, 90, '%'),
             settingsRow('shadow', t('settings.shadow'), appearance.shadow, 100, '%'),
             settingsRow('radius', t('settings.radius'), appearance.radius, 20, 'px'),
+            h(ArkSettings, { t, enabled: arkEnabled, onChange: (value) => setArkEnabledPersist(value) }),
             h(
               'div',
               { className: 'dbf-setting' },
@@ -1836,9 +2356,10 @@ window.__ModuleLoader__.load({
               ),
               h('div', { className: 'dbf-sub', style: { marginTop: '2px' } }, t('settings.dock.hint')),
             ),
-            h(
+          ),
+          h(
               'div',
-              { className: 'dbf-block', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
+              { className: 'dbf-block dbf-settings-foot', style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
               h('span', { className: 'dbf-sub', style: { marginTop: 0 } }, t('settings.hint')),
               h(
                 'div',
@@ -1851,7 +2372,6 @@ window.__ModuleLoader__.load({
                 ),
               ),
             ),
-          ),
         );
 
       }
@@ -1879,6 +2399,7 @@ window.__ModuleLoader__.load({
         { ref: rootRef, className: 'dbf-root dbf-dir-' + dir, style: surfaceStyle },
         h('style', { key: 'css' }, STYLE),
         surface,
+        arkOpen && arkEnabled ? h(ArkQuotaPanel, { t, onClose: () => setArkOpen(false) }) : null,
         bubble,
       );
       return createPortal !== null && typeof document !== 'undefined' ? createPortal(tree, document.body) : tree;

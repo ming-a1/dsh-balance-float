@@ -1,11 +1,11 @@
 {
   "name": "@lls-a1/dsh-balance-float",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "publishConfig": {
     "access": "public"
   },
   "type": "module",
-  "description": "Floating Web UI pill that reads the locally saved DeepSeek usage ledger: API balance, today's spend, and current peak/off-peak pricing.",
+  "description": "Floating Web UI pill for DeepSeek API balance, today's spend and peak/off-peak pricing, plus a Volcengine Ark quota panel (account balance and Agent Plan / Coding Plan windows) signed locally with an AK/SK pair",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,7 +23,12 @@
     "balance",
     "usage",
     "peak",
-    "widget"
+    "widget",
+    "volcengine",
+    "ark",
+    "quota",
+    "agent-plan",
+    "coding-plan"
   ],
   "exports": {
     ".": "./index.js",
