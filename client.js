@@ -369,6 +369,7 @@ window.__ModuleLoader__.load({
       '.dbf-ark-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:9px 11px;border:0;border-bottom:.5px solid var(--dsw-alias-border-l1);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}',
       '.dbf-ark-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;line-height:1;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-arkpanel-actions{display:flex;align-items:center;gap:2px;margin-left:auto}',
       '.dbf-ark-chevron{display:block;flex:none;opacity:.75}',
       '.dbf-ark-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.22);z-index:29}',
       '.dbf-arkpanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:72vh;overflow:auto;z-index:30}',
@@ -666,11 +667,15 @@ window.__ModuleLoader__.load({
     function useArkSummary() {
       const [state, setState] = useState({ status: 'loading', data: null });
       const [now, setNow] = useState(() => Date.now());
+      const [refreshing, setRefreshing] = useState(false);
+      const loadRef = useRef(async () => {});
       useEffect(() => {
         let alive = true;
-        const load = async () => {
+        // `fresh` bypasses the Host's 60 s cache (manual refresh only).
+        const load = async (fresh = false) => {
+          if (fresh) setRefreshing(true);
           try {
-            const response = await fetch('/ark-quota/summary');
+            const response = await fetch('/ark-quota/summary' + (fresh ? '?fresh=1' : ''));
             if (!response.ok) throw new Error('http ' + response.status);
             const payload = await response.json();
             if (!alive) return;
@@ -683,14 +688,17 @@ window.__ModuleLoader__.load({
             }
           } catch {
             if (alive) setState({ status: 'absent', data: null });
+          } finally {
+            if (fresh && alive) setRefreshing(false);
           }
         };
+        loadRef.current = load;
         const onChanged = () => {
-          void load();
+          void load(false);
         };
-        load();
+        void load(false);
         window.addEventListener('dsh-ark-quota-changed', onChanged);
-        const timer = setInterval(load, 60000);
+        const timer = setInterval(() => load(false), 60000);
         const ticker = setInterval(() => setNow(Date.now()), 30000);
         return () => {
           alive = false;
@@ -699,7 +707,10 @@ window.__ModuleLoader__.load({
           clearInterval(ticker);
         };
       }, []);
-      return { ...state, now };
+      const refresh = useCallback(() => {
+        void loadRef.current(true);
+      }, []);
+      return { ...state, now, refreshing, refresh };
     }
 
     /** 一万以上用「万」，其余千分位。 */
@@ -945,7 +956,23 @@ window.__ModuleLoader__.load({
               onPointerCancel: onHeaderUp,
             },
             h('span', { className: 'dbf-row-title' }, t('ark.title'), tier ? h('span', { className: 'dbf-ark-tier' }, tier) : null),
-            h('button', { type: 'button', className: 'dbf-icon', 'aria-label': t('ark.close'), title: t('ark.close'), onClick: onClose }, '×'),
+            h(
+              'div',
+              { className: 'dbf-arkpanel-actions' },
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: state.refreshing ? 'dbf-icon dbf-spinning' : 'dbf-icon',
+                  title: t('refresh'),
+                  'aria-label': t('refresh'),
+                  onClick: () => state.refresh(),
+                  disabled: state.refreshing,
+                },
+                h(RefreshIcon),
+              ),
+              h('button', { type: 'button', className: 'dbf-icon', 'aria-label': t('ark.close'), title: t('ark.close'), onClick: onClose }, '×'),
+            ),
           ),
           h('div', { className: 'dbf-arkpanel-body' }, body),
           h('div', { className: 'dbf-ark-foot' }, updatedAt ? t('ark.updated', { time: updatedAt }) : ''),
