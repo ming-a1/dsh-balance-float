@@ -537,6 +537,21 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /** Close glyph, drawn so it matches {@link RefreshIcon} stroke for stroke. */
+    function CloseIcon() {
+      return h(
+        'svg',
+        {
+          viewBox: '0 0 24 24', width: 14, height: 14, fill: 'none',
+          stroke: 'currentColor', strokeWidth: 2,
+          strokeLinecap: 'round', strokeLinejoin: 'round',
+          'aria-hidden': true, focusable: 'false',
+        },
+        h('path', { d: 'M18 6 6 18' }),
+        h('path', { d: 'm6 6 12 12' }),
+      );
+    }
+
     /** Two-slider glyph: opens the appearance panel. */
     function SettingsIcon() {
       return h(
@@ -971,7 +986,11 @@ window.__ModuleLoader__.load({
                 },
                 h(RefreshIcon),
               ),
-              h('button', { type: 'button', className: 'dbf-icon', 'aria-label': t('ark.close'), title: t('ark.close'), onClick: onClose }, '×'),
+              h(
+                'button',
+                { type: 'button', className: 'dbf-icon', 'aria-label': t('ark.close'), title: t('ark.close'), onClick: onClose },
+                h(CloseIcon),
+              ),
             ),
           ),
           h('div', { className: 'dbf-arkpanel-body' }, body),
