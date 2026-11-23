@@ -370,8 +370,7 @@ window.__ModuleLoader__.load({
       '.dbf-ark-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;line-height:1;color:var(--dsw-alias-label-secondary)}',
       '.dbf-arkpanel-actions{display:flex;align-items:center;gap:2px;margin-left:auto}',
-      '.dbf-ark-chevron{display:block;flex:none;opacity:.75}',
-      '.dbf-ark-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.22);z-index:29}',
+      '.dbf-ark-chevron{display:block;flex:none;opacity:.75;transform:translateY(1px)}',
       '.dbf-arkpanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:72vh;overflow:auto;z-index:30}',
       '.dbf-arkpanel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;cursor:move;touch-action:none;user-select:none}',
       '.dbf-arkpanel-body{padding:0 11px 11px}',
@@ -547,8 +546,8 @@ window.__ModuleLoader__.load({
           strokeLinecap: 'round', strokeLinejoin: 'round',
           'aria-hidden': true, focusable: 'false',
         },
-        h('path', { d: 'M18 6 6 18' }),
-        h('path', { d: 'm6 6 12 12' }),
+        h('path', { d: 'M20 4 4 20' }),
+        h('path', { d: 'M4 4 20 20' }),
       );
     }
 
@@ -837,6 +836,20 @@ window.__ModuleLoader__.load({
         return () => window.removeEventListener('keydown', onKey);
       }, [onClose]);
 
+      // 没有遮罩层了：点面板外仍然关闭（入口行自己负责开关，不算「外」）。
+      useEffect(() => {
+        const onDown = (event) => {
+          const panel = panelRef.current;
+          if (panel === null) return;
+          const target = event.target;
+          if (target instanceof Node && panel.contains(target)) return;
+          if (target instanceof Element && target.closest('.dbf-ark-entry')) return;
+          onClose();
+        };
+        window.addEventListener('pointerdown', onDown, true);
+        return () => window.removeEventListener('pointerdown', onDown, true);
+      }, [onClose]);
+
       const onHeaderDown = (event) => {
         if (event.button !== 0) return;
         // 标题栏里的按钮（关闭）自己处理点击，否则 pointer capture 会吞掉 click。
@@ -951,7 +964,6 @@ window.__ModuleLoader__.load({
       return h(
         React.Fragment,
         null,
-        h('div', { className: 'dbf-ark-backdrop', 'aria-hidden': true, onClick: onClose }),
         h(
           'div',
           {
