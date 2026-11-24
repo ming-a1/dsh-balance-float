@@ -117,7 +117,7 @@ window.__ModuleLoader__.load({
       'ark.close': '关闭火山额度面板',
       'ark.settings.title': '火山方舟设置',
       'ark.settings.show': '显示火山方舟入口',
-      'ark.settings.hint': '关闭后余额小窗里不再出现火山方舟这一行。',
+      'ark.settings.hint': '打开后余额小窗里出现火山方舟这一行；需先配置 AK/SK，未配置时不会显示。',
       'ark.settings.none': '尚未配置 AK/SK',
       'ark.settings.current': '当前 AK：{ak}',
       'ark.settings.save': '保存 AK/SK',
@@ -231,7 +231,7 @@ window.__ModuleLoader__.load({
       'ark.close': 'Close the Volcengine Ark panel',
       'ark.settings.title': 'Volcengine Ark',
       'ark.settings.show': 'Show the Volcengine Ark entry',
-      'ark.settings.hint': 'When off, the Ark row disappears from the balance card.',
+      'ark.settings.hint': 'When on, the Ark row appears in the balance card. AK/SK must be configured first.',
       'ark.settings.none': 'No AK/SK configured yet',
       'ark.settings.current': 'AK {ak}',
       'ark.settings.save': 'Save AK/SK',
@@ -688,20 +688,32 @@ window.__ModuleLoader__.load({
         // `fresh` bypasses the Host's 60 s cache (manual refresh only).
         const load = async (fresh = false) => {
           if (fresh) setRefreshing(true);
+          // 只有「路由不存在」才当作缺功能隐藏入口；401/5xx/断网都只是暂时失败，
+          // 保留上一份数据，避免入口忽隐忽现。
+          const degrade = () =>
+            setState((previous) => (previous.data !== null ? previous : { status: 'error', data: null }));
           try {
             const response = await fetch('/ark-quota/summary' + (fresh ? '?fresh=1' : ''));
-            if (!response.ok) throw new Error('http ' + response.status);
+            if (!alive) return;
+            if (response.status === 404) {
+              setState({ status: 'absent', data: null });
+              return;
+            }
+            if (!response.ok) {
+              degrade();
+              return;
+            }
             const payload = await response.json();
             if (!alive) return;
             if (payload.ok === false && payload.code === 'missing-credential') {
               setState({ status: 'unconfigured', data: null });
             } else if (payload.ok === false || !payload.summary) {
-              setState({ status: 'error', data: null });
+              degrade();
             } else {
               setState({ status: 'ok', data: payload.summary });
             }
           } catch {
-            if (alive) setState({ status: 'absent', data: null });
+            if (alive) degrade();
           } finally {
             if (fresh && alive) setRefreshing(false);
           }
@@ -740,7 +752,9 @@ window.__ModuleLoader__.load({
     /** 余额卡片里的一行入口：火山方舟 · 档位 · 账户余额 ›（余额为 0 时不占位）。 */
     function ArkQuotaEntry({ t, onOpen }) {
       const state = useArkSummary();
-      if (state.status === 'absent') return null;
+      // 没配 AK/SK 就不出现（面板里有引导，配置后自动冒出来）；
+      // 路由不存在（旧宿主）同样不显示；暂时失败则沿用上一份数据。
+      if (state.status === 'absent' || state.status === 'unconfigured' || state.data === null) return null;
       const tier = state.data?.agentPlan?.tier ?? null;
       const balance = state.data?.balance?.available;
       // 只有真正有钱（或欠费）时才占位：0 与精度内的 0 都不显示。
@@ -842,8 +856,11 @@ window.__ModuleLoader__.load({
           const panel = panelRef.current;
           if (panel === null) return;
           const target = event.target;
-          if (target instanceof Node && panel.contains(target)) return;
-          if (target instanceof Element && target.closest('.dbf-ark-entry')) return;
+          if (!(target instanceof Node)) return;
+          if (panel.contains(target)) return;
+          // 挂件本体（胶囊/主卡片/设置面板）不算外部：主面板收起或点击它时
+          // 都保持独立，只有点页面其它区域才关闭。
+          if (target instanceof Element && target.closest('.dbf-root') !== null) return;
           onClose();
         };
         window.addEventListener('pointerdown', onDown, true);
@@ -1198,6 +1215,8 @@ window.__ModuleLoader__.load({
       const [settingsOpen, setSettingsOpen] = useState(false);
       const [arkOpen, setArkOpen] = useState(false);
       // 默认关闭：用户在外观设置里打开后才出现火山方舟入口。
+      // 默认关闭：在「外观设置 → 火山方舟设置」里手动打开后才出现入口
+      // （且仍需已配置 AK/SK，未配置时即使打开也不显示）。
       const [arkEnabled, setArkEnabled] = useState(() => {
         try {
           return localStorage.getItem('dsh.ark-quota.show') === 'on';
