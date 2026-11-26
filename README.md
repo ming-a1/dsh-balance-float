@@ -61,10 +61,12 @@ Host 半边在本地记账并代理所有外部请求，浏览器半边只读快
 - 必须已配置 AK/SK：未配置时即使开关打开也不显示（配置入口在同一区块）；
 - 同一区块里可直接保存 / 清除 AK/SK（写入 DSH 凭据库的 `ARK_QUOTA_ACCESS_KEY`、`ARK_QUOTA_SECRET_KEY`）；
 - 面板标题栏可拖动，位置会记住，超出视口自动夹回；`×`、`Esc`、点面板外部均可关闭（无遮罩）；
+- 面板顶部显示**套餐到期时间**（Agent Plan / Coding Plan 各一行，含自动续费标记；≤7 天转黄、已过期转红），来源 `GetPersonalPlan`，10 分钟缓存；
 - 数据接口（全部走 AK/SK 的 V4 签名 HMAC-SHA256，与火山官方 SDK 的 Authorization 逐字节一致，不读取浏览器登录态）：
   - `billing.volcengineapi.com` · `QueryBalanceAcct`（账户余额）
   - `ark.cn-beijing.volcengineapi.com` · `GetAFPUsage`（Agent Plan，个人版）
   - `ark.cn-beijing.volcengineapi.com` · `GetCodingPlanUsage`（Coding Plan，个人版）
+  - `ark.cn-beijing.volcengineapi.com` · `GetPersonalPlan`（套餐档位 / 到期时间 / 自动续费）
 - Host 路由：`GET /ark-quota/summary`（60 秒缓存，`?fresh=1` 绕过）、`GET|POST|DELETE /ark-quota/credentials`。
 
 **获取 AK/SK**：火山引擎控制台 → 访问控制 → 访问密钥，创建一对；建议只授予只读权限（费用中心 Billing 只读即可查余额）。

@@ -114,6 +114,10 @@ window.__ModuleLoader__.load({
       'ark.reset': '{time}后重置',
       'ark.reset.soon': '即将重置',
       'ark.updated': '更新于 {time} · 60 秒自动刷新',
+      'ark.plan.until': '{date} 到期',
+      'ark.plan.soon': '{date} 到期 · 仅剩 {days} 天',
+      'ark.plan.expired': '已过期',
+      'ark.plan.renew': '自动续费',
       'ark.close': '关闭火山额度面板',
       'ark.settings.title': '火山方舟设置',
       'ark.settings.show': '显示火山方舟入口',
@@ -370,6 +374,14 @@ window.__ModuleLoader__.load({
       '.dbf-ark-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}',
       '.dbf-ark-entry-side{display:flex;align-items:center;gap:4px;line-height:1;color:var(--dsw-alias-label-secondary)}',
       '.dbf-arkpanel-actions{display:flex;align-items:center;gap:2px;margin-left:auto}',
+      '.dbf-ark-plans{display:flex;flex-direction:column;gap:2px;margin-top:4px}',
+      '.dbf-ark-plan{display:flex;align-items:baseline;gap:6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}',
+      '.dbf-ark-plan-name{font-weight:600;color:var(--dsw-alias-label-primary)}',
+      '.dbf-ark-plan-renew{margin-left:auto;font-size:10.5px;opacity:.8}',
+      '.dbf-ark-plan.is-soon{color:var(--dsw-alias-state-warning-primary,#b26a00)}',
+      '.dbf-ark-plan.is-soon .dbf-ark-plan-name{color:inherit}',
+      '.dbf-ark-plan.is-expired{color:var(--dsw-alias-state-error-primary)}',
+      '.dbf-ark-plan.is-expired .dbf-ark-plan-name{color:inherit}',
       '.dbf-ark-chevron{display:block;flex:none;opacity:.75;transform:translateY(1px)}',
       '.dbf-arkpanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;max-height:72vh;overflow:auto;z-index:30}',
       '.dbf-arkpanel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px;cursor:move;touch-action:none;user-select:none}',
@@ -749,6 +761,20 @@ window.__ModuleLoader__.load({
       return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value);
     }
 
+    /** 套餐到期显示：返回文案与语气（normal / soon / expired）。 */
+    function planExpiry(t, plan) {
+      if (plan === null || plan === undefined || plan.subscribed !== true) return null;
+      const name = plan.plan === 'CodingPlan' ? 'Coding Plan' : 'Agent Plan';
+      if (plan.status === 'Expired') return { name, text: t('ark.plan.expired'), tone: 'expired' };
+      const end = typeof plan.endTime === 'string' ? Date.parse(plan.endTime) : Number.NaN;
+      if (!Number.isFinite(end)) return { name, text: '', tone: 'normal' };
+      const date = new Date(end + 8 * 3600 * 1000).toISOString().slice(0, 10);
+      const days = Math.ceil((end - Date.now()) / 86400000);
+      const renew = plan.autoRenew === true ? t('ark.plan.renew') : '';
+      if (days <= 7) return { name, text: t('ark.plan.soon', { date, days: String(Math.max(0, days)) }), tone: 'soon', renew };
+      return { name, text: t('ark.plan.until', { date }), tone: 'normal', renew };
+    }
+
     /** 余额卡片里的一行入口：火山方舟 · 档位 · 账户余额 ›（余额为 0 时不占位）。 */
     function ArkQuotaEntry({ t, onOpen }) {
       const state = useArkSummary();
@@ -917,6 +943,9 @@ window.__ModuleLoader__.load({
         : '';
       const panelStyle = pos ? { left: pos.left + 'px', top: pos.top + 'px', transform: 'none' } : undefined;
 
+      const planLines = [planExpiry(t, state.data?.plans?.agent), planExpiry(t, state.data?.plans?.coding)].filter(
+        (line) => line !== null && line.text !== '',
+      );
       const body =
         state.status === 'loading'
           ? h('div', { className: 'dbf-ark-hint' }, t('loading'))
@@ -927,6 +956,23 @@ window.__ModuleLoader__.load({
               : h(
                   'div',
                   null,
+                  planLines.length === 0
+                    ? null
+                    : h(
+                        'div',
+                        { className: 'dbf-ark-plans' },
+                        planLines.map((line) =>
+                          h(
+                            'div',
+                            { key: line.name, className: 'dbf-ark-plan is-' + line.tone },
+                            h('span', { className: 'dbf-ark-plan-name' }, line.name),
+                            h('span', null, line.text),
+                            line.renew !== undefined && line.renew !== ''
+                              ? h('span', { className: 'dbf-ark-plan-renew' }, line.renew)
+                              : null,
+                          ),
+                        ),
+                      ),
                   h(
                     'div',
                     { className: 'dbf-ark-line', style: { marginTop: '4px' } },
